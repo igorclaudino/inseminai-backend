@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsOptional, IsNumber, IsIn } from 'class-validator';
+import { PERFIS_VALIDOS } from '../ia-perfil.constants';
 
 const PROTOCOLOS = ['IATF', 'Ovsynch', 'IATF com eCG', 'Ressincronização', 'Monta Natural', 'Monta Controlada'];
 
@@ -32,4 +33,16 @@ export class PreverPrenhezDto {
   @IsIn(['seca', 'chuvosa'])
   @IsOptional()
   estacaoAno?: string;
+
+  @ApiProperty({
+    example: 'padrao',
+    enum: PERFIS_VALIDOS,
+    required: false,
+    description:
+      'Sobrescreve o perfil de IA da fazenda apenas para esta análise. ' +
+      'Se omitido, usa o perfil configurado na fazenda.',
+  })
+  @IsIn(PERFIS_VALIDOS)
+  @IsOptional()
+  perfilIaOverride?: string;
 }

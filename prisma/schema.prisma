@@ -25,6 +25,9 @@ model Fazenda {
   taxaMediaPrenhez Int      @default(0)
   criadoEm         DateTime @default(now())
 
+  // Perfil de análise de IA por fazenda: essencial | padrao | especialista
+  perfilIa         String   @default("padrao")
+
   usuarioId String
   usuario   Usuario @relation(fields: [usuarioId], references: [id])
 
@@ -163,8 +166,17 @@ model Predicao {
   estacaoAno              String?
   criadoEm                DateTime @default(now())
 
-  animalId String
-  animal   Animal @relation(fields: [animalId], references: [id])
+  // Rastreamento de consumo de IA
+  perfilIa                String   @default("padrao")      // essencial | resumido | padrao | especialista
+  tokensEntrada           Int      @default(0)
+  tokensSaida             Int      @default(0)
+
+  // Tipo de análise — define como a entrada é exibida no histórico do frontend
+  tipoAnalise             String   @default("prenhez")     // prenhez | melhor_reprodutor | melhor_matriz
+
+  // animalId é opcional para análises de nível de fazenda (melhor_matriz sem animal específico)
+  animalId String?
+  animal   Animal? @relation(fields: [animalId], references: [id])
 
   reprodutorId String?
   reprodutor   Reprodutor? @relation(fields: [reprodutorId], references: [id])

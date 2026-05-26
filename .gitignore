@@ -28,5 +28,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# Claude Code — configurações locais (podem conter tokens e caminhos pessoais)
+.claude/settings.local.json
+
 # Temporários gerados pelo script PDF
 docs/gerar-pdf-roteiro.py
