@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzMWM1NzFkZC00OWRhLTQ4MDQtYjIwOS1iZTMxNjJiZTYyYWIiLCJlbWFpbCI6ImRlbW9AcGVjdWFyaWEuaWEiLCJpYXQiOjE3Nzk0NzExNDIsImV4cCI6MTc4MDA3NTk0Mn0.IvLYi-Sq0gzlSAOYYYpYJpBb36ULhsJHTowjeCMZjcU' http://localhost:3001/api/dashboard/fazenda-demo-001)",
+      "Bash(netstat -tlnp)",
+      "Read(//proc/1929/net/**)",
+      "Bash(awk '{print $2}')",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(tail -5 /tmp/nestjs-server.log)",
+      "Read(//tmp/**)",
+      "Bash(curl -s http://localhost:3001/api/auth/login -X POST -H \"Content-Type: application/json\" -d '{\"email\":\"x\",\"senha\":\"x\"}')",
+      "Bash(awk '{print $1, $2, substr\\($0, index\\($0,$11\\), 60\\)}')",
+      "Bash(python3 -c \"import sys,json; r=json.load\\(sys.stdin\\); print\\('insightGpt:', repr\\(r.get\\('insightGpt'\\)\\)\\)\")",
+      "Bash(python3 -c \"import reportlab\")",
+      "Bash(pandoc --version)",
+      "Bash(pip3 install *)",
+      "Bash(python3 gerar-pdf-roteiro.py)",
+      "Bash(find /usr/share/fonts -name \"*.ttf\" 2>/dev/null | grep -i \"dejavu\\\\|liberation\\\\|ubuntu\\\\|noto\" | head -10)",
+      "Read(//usr/share/fonts/**)"
+    ]
+  }
+}

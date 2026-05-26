@@ -1,0 +1,32 @@
+# Dependências
+node_modules/
+
+# Build
+dist/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.*.local
+
+# Prisma
+prisma/migrations/dev.db
+prisma/*.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporários gerados pelo script PDF
+docs/gerar-pdf-roteiro.py

@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id        String   @id @default(uuid())
+  nome      String
+  email     String   @unique
+  senha     String
+  criadoEm DateTime @default(now())
+
+  fazendas Fazenda[]
+}
+
+model Fazenda {
+  id               String   @id @default(uuid())
+  nome             String
+  municipio        String?
+  estado           String?
+  taxaMediaPrenhez Int      @default(0)
+  criadoEm         DateTime @default(now())
+
+  usuarioId String
+  usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+  animais      Animal[]
+  reprodutores Reprodutor[]
+}
+
+model Animal {
+  id               String    @id @default(uuid())
+  identificador    String
+  especie          String    // bovino | ovino | caprino
+  nome             String
+  raca             String
+  linhagem         String?
+  sexo             String    // macho | femea
+  dataNascimento   DateTime?
+  statusReproducao String    @default("Apto") // Apto | Prenhe | Em Reprodução | Descarte | Inativo
+  produtor         String?
+  fotoUrl          String?
+  ativo            Boolean   @default(true)
+  criadoEm         DateTime  @default(now())
+  atualizadoEm     DateTime  @updatedAt
+
+  // Histórico reprodutivo (contadores atualizados automaticamente)
+  historicoPrenhez         Int     @default(0)
+  quantidadeAbortos        Int     @default(0)
+  quantidadePartos         Int     @default(0)
+  quantidadeCiosDetectados Int     @default(0)
+  intervaloMedioPartos     Int     @default(0)
+
+  // Pós-parto: armazena a data do último parto; diasPosParto é calculado dinamicamente
+  dataUltimoParto DateTime?
+
+  // Saúde e condição
+  scoreCondicaoCorporal      Int     @default(3)
+  historicoDoencaReprodutiva Boolean @default(false)
+
+  // Desempenho ponderal
+  pesoNascer          Float?
+  ganhoPesoPreDesmame Float?
+  pesoDesmame         Float?
+
+  fazendaId String
+  fazenda   Fazenda @relation(fields: [fazendaId], references: [id])
+
+  paiId     String?
+  pai       Animal?  @relation("FilhoPai", fields: [paiId], references: [id])
+  filhosPai Animal[] @relation("FilhoPai")
+
+  maeId     String?
+  mae       Animal?  @relation("FilhoMae", fields: [maeId], references: [id])
+  filhosMae Animal[] @relation("FilhoMae")
+
+  pesagens            Pesagem[]
+  eventosReprodutivos EventoReprodutivo[]
+  predicoes           Predicao[]
+  reprodutor          Reprodutor?
+}
+
+model Pesagem {
+  id          String   @id @default(uuid())
+  pesoKg      Float
+  dataPesagem DateTime
+  observacoes String?
+  criadoEm    DateTime @default(now())
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id])
+}
+
+model Reprodutor {
+  id                String   @id @default(uuid())
+  especie           String   // bovino | ovino | caprino
+  nome              String
+  raca              String
+  scoreFertilidade  Int      @default(0) // score blendado (exibido)
+  scoreEstimado     Int      @default(0) // estimativa inicial por IA (raça/espécie)
+  totalInseminacoes Int      @default(0)
+  prenhezes         Int      @default(0)
+  ativo             Boolean  @default(true)
+  criadoEm          DateTime @default(now())
+
+  fazendaId String
+  fazenda   Fazenda @relation(fields: [fazendaId], references: [id])
+
+  // Animal da própria fazenda vinculado como reprodutor (opcional — sêmen externo não tem vínculo)
+  animalId String?   @unique
+  animal   Animal?   @relation(fields: [animalId], references: [id])
+
+  eventosReprodutivos EventoReprodutivo[]
+  predicoes           Predicao[]
+}
+
+model EventoReprodutivo {
+  id String @id @default(uuid())
+
+  // Tipo: inseminacao_artificial | monta_natural | monta_controlada | cio | parto | aborto | prenhez
+  tipoEvento String
+
+  // Campos de inseminação
+  inseminador          String?
+  semenUtilizado       String?
+  lote                 String?
+  protocoloReprodutivo String?
+
+  // Diagnóstico: pendente | positivo | negativo | falha_concepcao
+  diagnosticoPrenhez String   @default("pendente")
+  resultado          String?
+
+  dataEvento      DateTime
+  dataConfirmacao DateTime?
+  observacoes     String?
+  criadoEm        DateTime @default(now())
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id])
+
+  reprodutorId String?
+  reprodutor   Reprodutor? @relation(fields: [reprodutorId], references: [id])
+
+  predicao Predicao?
+}
+
+model Predicao {
+  id                      String   @id @default(uuid())
+  probabilidadePrenhez    Int
+  scoreFertilidade        Int
+  nivelRisco              String   // baixo | moderado | alto
+  compatibilidadeGenetica Int?
+  fatoresPositivos        String[]
+  alertas                 String[]
+  recomendacoes           String[]
+  insightGpt              String?
+  protocolo               String?
+  temperaturaAmbiente     Float?
+  estacaoAno              String?
+  criadoEm                DateTime @default(now())
+
+  animalId String
+  animal   Animal @relation(fields: [animalId], references: [id])
+
+  reprodutorId String?
+  reprodutor   Reprodutor? @relation(fields: [reprodutorId], references: [id])
+
+  eventoReprodutivoId String?            @unique
+  eventoReprodutivo   EventoReprodutivo? @relation(fields: [eventoReprodutivoId], references: [id])
+}
