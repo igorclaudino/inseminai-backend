@@ -2,37 +2,37 @@ import { Injectable, ConflictException, UnauthorizedException } from '@nestjs/co
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
-import { RegistroDto } from './dto/registro.dto';
+import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
 
-  async registro(dto: RegistroDto) {
-    const existe = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
-    if (existe) throw new ConflictException('E-mail já cadastrado');
+  async register(dto: RegisterDto) {
+    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (exists) throw new ConflictException('E-mail already registered');
 
-    const senhaHash = await bcrypt.hash(dto.senha, 10);
-    const usuario = await this.prisma.usuario.create({
-      data: { nome: dto.nome, email: dto.email, senha: senhaHash },
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const user = await this.prisma.user.create({
+      data: { name: dto.name, email: dto.email, password: hashedPassword },
     });
 
-    return this.gerarToken(usuario.id, usuario.email);
+    return this.generateToken(user.id, user.email);
   }
 
   async login(dto: LoginDto) {
-    const usuario = await this.prisma.usuario.findUnique({ where: { email: dto.email } });
-    if (!usuario) throw new UnauthorizedException('Credenciais inválidas');
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const senhaValida = await bcrypt.compare(dto.senha, usuario.senha);
-    if (!senhaValida) throw new UnauthorizedException('Credenciais inválidas');
+    const valid = await bcrypt.compare(dto.password, user.password);
+    if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    return this.gerarToken(usuario.id, usuario.email);
+    return this.generateToken(user.id, user.email);
   }
 
-  private gerarToken(usuarioId: string, email: string) {
-    const token = this.jwt.sign({ sub: usuarioId, email });
+  private generateToken(userId: string, email: string) {
+    const token = this.jwt.sign({ sub: userId, email });
     return { access_token: token };
   }
 }

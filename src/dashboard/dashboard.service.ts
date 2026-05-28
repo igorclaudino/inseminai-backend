@@ -1,132 +1,128 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
-type Periodo = 'ultima_semana' | 'ultimo_mes' | 'ultimo_trimestre' | 'ultimo_ano' | 'todos';
+type Period = 'last_week' | 'last_month' | 'last_quarter' | 'last_year' | 'all';
 
 @Injectable()
 export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
-  async resumo(fazendaId: string, usuarioId: string, periodo: Periodo = 'ultimo_mes', tipoAnimal?: string) {
-    const fazenda = await this.prisma.fazenda.findUnique({ where: { id: fazendaId } });
-    if (!fazenda) throw new NotFoundException('Fazenda não encontrada');
-    if (fazenda.usuarioId !== usuarioId) throw new ForbiddenException();
+  async summary(farmId: string, period: Period = 'last_month', species?: string) {
 
-    const dataInicio = this.calcularDataInicio(periodo);
-    const filtroData = dataInicio ? { gte: dataInicio } : undefined;
-    const filtroEspecie = tipoAnimal ? { especie: tipoAnimal } : {};
+    const startDate = this.calcStartDate(period);
+    const dateFilter = startDate ? { gte: startDate } : undefined;
+    const speciesFilter = species ? { species } : {};
 
     const [
-      totalAnimais,
-      totalAnimaisAnterior,
-      garanhoeAtivos,
-      garanhoeAtivosAnterior,
-      inseminacoesSucesso,
-      inseminacoesSucessoAnterior,
-      inseminacoesInsucesso,
-      inseminacoesInsucessoAnterior,
-      distribuicaoPorEspecie,
+      totalAnimals,
+      totalAnimalsBefore,
+      activeBreederCount,
+      activeBreederCountBefore,
+      successfulInseminations,
+      successfulInseminationsBefore,
+      failedInseminations,
+      failedInseminationsBefore,
+      bySpecies,
     ] = await Promise.all([
-      this.prisma.animal.count({ where: { fazendaId, ativo: true, ...filtroEspecie } }),
+      this.prisma.animal.count({ where: { farmId, active: true, ...speciesFilter } }),
       this.prisma.animal.count({
-        where: { fazendaId, ativo: true, ...filtroEspecie, ...(dataInicio ? { criadoEm: { lt: dataInicio } } : {}) },
+        where: { farmId, active: true, ...speciesFilter, ...(startDate ? { createdAt: { lt: startDate } } : {}) },
       }),
-      this.prisma.reprodutor.count({ where: { fazendaId, ativo: true, ...(tipoAnimal ? { especie: tipoAnimal } : {}) } }),
-      this.prisma.reprodutor.count({
-        where: { fazendaId, ativo: true, ...(tipoAnimal ? { especie: tipoAnimal } : {}), ...(dataInicio ? { criadoEm: { lt: dataInicio } } : {}) },
+      this.prisma.breeder.count({ where: { farmId, active: true, ...(species ? { species } : {}) } }),
+      this.prisma.breeder.count({
+        where: { farmId, active: true, ...(species ? { species } : {}), ...(startDate ? { createdAt: { lt: startDate } } : {}) },
       }),
-      this.prisma.eventoReprodutivo.count({
+      this.prisma.reproductiveEvent.count({
         where: {
-          animal: { fazendaId, ...filtroEspecie },
-          diagnosticoPrenhez: 'positivo',
-          ...(filtroData ? { dataEvento: filtroData } : {}),
+          animal: { farmId, ...speciesFilter },
+          pregnancyDiagnosis: 'positive',
+          ...(dateFilter ? { eventDate: dateFilter } : {}),
         },
       }),
-      this.prisma.eventoReprodutivo.count({
+      this.prisma.reproductiveEvent.count({
         where: {
-          animal: { fazendaId, ...filtroEspecie },
-          diagnosticoPrenhez: 'positivo',
-          ...(dataInicio ? { dataEvento: { lt: dataInicio } } : {}),
+          animal: { farmId, ...speciesFilter },
+          pregnancyDiagnosis: 'positive',
+          ...(startDate ? { eventDate: { lt: startDate } } : {}),
         },
       }),
-      this.prisma.eventoReprodutivo.count({
+      this.prisma.reproductiveEvent.count({
         where: {
-          animal: { fazendaId, ...filtroEspecie },
-          diagnosticoPrenhez: { in: ['negativo', 'falha_concepcao'] },
-          ...(filtroData ? { dataEvento: filtroData } : {}),
+          animal: { farmId, ...speciesFilter },
+          pregnancyDiagnosis: { in: ['negative', 'failed'] },
+          ...(dateFilter ? { eventDate: dateFilter } : {}),
         },
       }),
-      this.prisma.eventoReprodutivo.count({
+      this.prisma.reproductiveEvent.count({
         where: {
-          animal: { fazendaId, ...filtroEspecie },
-          diagnosticoPrenhez: { in: ['negativo', 'falha_concepcao'] },
-          ...(dataInicio ? { dataEvento: { lt: dataInicio } } : {}),
+          animal: { farmId, ...speciesFilter },
+          pregnancyDiagnosis: { in: ['negative', 'failed'] },
+          ...(startDate ? { eventDate: { lt: startDate } } : {}),
         },
       }),
       this.prisma.animal.groupBy({
-        by: ['especie'],
-        where: { fazendaId, ativo: true },
+        by: ['species'],
+        where: { farmId, active: true },
         _count: true,
       }),
     ]);
 
-    // Gráfico: eventos dos últimos 6 meses agrupados por mês
-    const seisMesesAtras = new Date();
-    seisMesesAtras.setMonth(seisMesesAtras.getMonth() - 6);
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    const eventosGrafico = await this.prisma.eventoReprodutivo.findMany({
+    const chartEvents = await this.prisma.reproductiveEvent.findMany({
       where: {
-        animal: { fazendaId, ...filtroEspecie },
-        dataEvento: { gte: seisMesesAtras },
-        tipoEvento: { in: ['inseminacao_artificial', 'monta_natural', 'monta_controlada'] },
+        animal: { farmId, ...speciesFilter },
+        eventDate: { gte: sixMonthsAgo },
+        eventType: { in: ['artificial_insemination', 'natural_mating', 'controlled_mating'] },
       },
-      select: { dataEvento: true, diagnosticoPrenhez: true },
-      orderBy: { dataEvento: 'asc' },
+      select: { eventDate: true, pregnancyDiagnosis: true },
+      orderBy: { eventDate: 'asc' },
     });
 
-    const grafico = this.agruparPorMes(eventosGrafico);
+    const chart = this.groupByMonth(chartEvents);
 
-    const totalAvaliados = inseminacoesSucesso + inseminacoesInsucesso;
-    const taxaPrenhez = totalAvaliados > 0 ? Math.round((inseminacoesSucesso / totalAvaliados) * 100) : 0;
+    const totalEvaluated = successfulInseminations + failedInseminations;
+    const pregnancyRate = totalEvaluated > 0 ? Math.round((successfulInseminations / totalEvaluated) * 100) : 0;
 
-    const calcVariacao = (atual: number, anterior: number) =>
-      anterior === 0 ? 0 : Math.round(((atual - anterior) / anterior) * 100);
+    const calcChange = (current: number, previous: number) =>
+      previous === 0 ? 0 : Math.round(((current - previous) / previous) * 100);
 
     return {
       cards: {
-        totalAnimais: { valor: totalAnimais, variacao: calcVariacao(totalAnimais, totalAnimaisAnterior) },
-        garanhoeAtivos: { valor: garanhoeAtivos, variacao: calcVariacao(garanhoeAtivos, garanhoeAtivosAnterior) },
-        inseminacoesSucesso: { valor: inseminacoesSucesso, variacao: calcVariacao(inseminacoesSucesso, inseminacoesSucessoAnterior) },
-        inseminacoesInsucesso: { valor: inseminacoesInsucesso, variacao: calcVariacao(inseminacoesInsucesso, inseminacoesInsucessoAnterior) },
-        taxaPrenhez,
+        totalAnimals: { value: totalAnimals, change: calcChange(totalAnimals, totalAnimalsBefore) },
+        activeBreeders: { value: activeBreederCount, change: calcChange(activeBreederCount, activeBreederCountBefore) },
+        successfulInseminations: { value: successfulInseminations, change: calcChange(successfulInseminations, successfulInseminationsBefore) },
+        failedInseminations: { value: failedInseminations, change: calcChange(failedInseminations, failedInseminationsBefore) },
+        pregnancyRate,
       },
-      grafico,
-      distribuicaoPorEspecie: distribuicaoPorEspecie.map((e) => ({ especie: e.especie, quantidade: e._count })),
+      chart,
+      bySpecies: bySpecies.map((e) => ({ species: e.species, count: e._count })),
     };
   }
 
-  private agruparPorMes(eventos: { dataEvento: Date; diagnosticoPrenhez: string }[]) {
-    const mapa = new Map<string, { mes: string; total: number; sucesso: number }>();
+  private groupByMonth(events: { eventDate: Date; pregnancyDiagnosis: string }[]) {
+    const map = new Map<string, { month: string; total: number; successful: number }>();
 
-    for (const e of eventos) {
-      const mes = `${e.dataEvento.getFullYear()}-${String(e.dataEvento.getMonth() + 1).padStart(2, '0')}`;
-      if (!mapa.has(mes)) mapa.set(mes, { mes, total: 0, sucesso: 0 });
-      const entry = mapa.get(mes)!;
+    for (const e of events) {
+      const month = `${e.eventDate.getFullYear()}-${String(e.eventDate.getMonth() + 1).padStart(2, '0')}`;
+      if (!map.has(month)) map.set(month, { month, total: 0, successful: 0 });
+      const entry = map.get(month)!;
       entry.total += 1;
-      if (e.diagnosticoPrenhez === 'positivo') entry.sucesso += 1;
+      if (e.pregnancyDiagnosis === 'positive') entry.successful += 1;
     }
 
-    return Array.from(mapa.values()).sort((a, b) => a.mes.localeCompare(b.mes));
+    return Array.from(map.values()).sort((a, b) => a.month.localeCompare(b.month));
   }
 
-  private calcularDataInicio(periodo: Periodo): Date | null {
-    const dias: Record<string, number> = {
-      ultima_semana: 7,
-      ultimo_mes: 30,
-      ultimo_trimestre: 90,
-      ultimo_ano: 365,
+  private calcStartDate(period: Period): Date | null {
+    const days: Record<string, number> = {
+      last_week: 7,
+      last_month: 30,
+      last_quarter: 90,
+      last_year: 365,
     };
-    const d = dias[periodo];
+    const d = days[period];
     if (!d) return null;
     return new Date(Date.now() - d * 24 * 60 * 60 * 1000);
   }

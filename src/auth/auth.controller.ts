@@ -1,7 +1,7 @@
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Controller, Post, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { RegistroDto } from './dto/registro.dto';
+import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 
 @ApiTags('Auth')
@@ -9,34 +9,18 @@ import { LoginDto } from './dto/login.dto';
 export class AuthController {
   constructor(private authService: AuthService) {}
 
-  @Post('registro')
-  @ApiOperation({ summary: 'Criar nova conta' })
-  @ApiResponse({
-    status: 201,
-    description: 'Usuário criado com sucesso',
-    schema: {
-      example: {
-        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-      },
-    },
-  })
-  @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
-  registro(@Body() dto: RegistroDto) {
-    return this.authService.registro(dto);
+  @Post('register')
+  @ApiOperation({ summary: 'Create new account' })
+  @ApiResponse({ status: 201, description: 'User created, returns JWT token' })
+  @ApiResponse({ status: 409, description: 'E-mail already registered' })
+  register(@Body() dto: RegisterDto) {
+    return this.authService.register(dto);
   }
 
   @Post('login')
-  @ApiOperation({ summary: 'Autenticar e obter token JWT' })
-  @ApiResponse({
-    status: 200,
-    description: 'Login realizado com sucesso',
-    schema: {
-      example: {
-        access_token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-      },
-    },
-  })
-  @ApiResponse({ status: 401, description: 'Credenciais inválidas' })
+  @ApiOperation({ summary: 'Authenticate and get JWT token' })
+  @ApiResponse({ status: 200, description: 'Returns JWT token' })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }

@@ -3,544 +3,550 @@ import * as bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-const dias = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
 async function main() {
-  const senhaHash = await bcrypt.hash('123456', 10);
+  const passwordHash = await bcrypt.hash('123456', 10);
 
-  const usuario = await prisma.usuario.upsert({
-    where: { email: 'demo@pecuaria.ia' },
+  const user = await prisma.user.upsert({
+    where: { email: 'demo@insemiai.com' },
     update: {},
-    create: { nome: 'Produtor Demo', email: 'demo@pecuaria.ia', senha: senhaHash },
+    create: { name: 'Demo Producer', email: 'demo@insemiai.com', password: passwordHash },
   });
 
-  const fazenda = await prisma.fazenda.upsert({
-    where: { id: 'fazenda-demo-001' },
+  const farm = await prisma.farm.upsert({
+    where: { id: 'farm-demo-001' },
     update: {},
     create: {
-      id: 'fazenda-demo-001',
-      nome: 'Fazenda São João',
-      municipio: 'Crateús',
-      estado: 'CE',
-      taxaMediaPrenhez: 68,
-      usuarioId: usuario.id,
+      id: 'farm-demo-001',
+      name: 'Sao Joao Farm',
+      city: 'Crateús',
+      state: 'CE',
+      averagePregnancyRate: 68,
+      ownerId: user.id,
     },
   });
 
-  // ─── Reprodutores ────────────────────────────────────────────────────────────
+  // Create admin FarmMember for the owner
+  await prisma.farmMember.upsert({
+    where: { farmId_userId: { farmId: farm.id, userId: user.id } },
+    update: {},
+    create: { farmId: farm.id, userId: user.id, role: 'admin' },
+  });
+
+  // ─── Breeders ────────────────────────────────────────────────────────────────
 
   await Promise.all([
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-nelore-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-nelore-001' },
       update: {},
       create: {
-        id: 'repr-nelore-001',
-        nome: 'Imperador',
-        especie: 'bovino',
-        raca: 'Nelore',
-        scoreFertilidade: 85,
-        scoreEstimado: 85,
-        totalInseminacoes: 0,
-        prenhezes: 0,
-        fazendaId: fazenda.id,
+        id: 'breeder-nelore-001',
+        name: 'Imperador',
+        species: 'cattle',
+        breed: 'Nelore',
+        fertilityScore: 85,
+        estimatedScore: 85,
+        totalInseminations: 0,
+        pregnancies: 0,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-angus-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-angus-001' },
       update: {},
       create: {
-        id: 'repr-angus-001',
-        nome: 'Black Diamond',
-        especie: 'bovino',
-        raca: 'Angus',
-        scoreFertilidade: 82,
-        scoreEstimado: 82,
-        totalInseminacoes: 12,
-        prenhezes: 9,
-        fazendaId: fazenda.id,
+        id: 'breeder-angus-001',
+        name: 'Black Diamond',
+        species: 'cattle',
+        breed: 'Angus',
+        fertilityScore: 82,
+        estimatedScore: 82,
+        totalInseminations: 12,
+        pregnancies: 9,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-gir-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-gir-001' },
       update: {},
       create: {
-        id: 'repr-gir-001',
-        nome: 'Rajado do Sertão',
-        especie: 'bovino',
-        raca: 'Gir',
-        scoreFertilidade: 58,
-        scoreEstimado: 78,
-        totalInseminacoes: 8,
-        prenhezes: 3,
-        fazendaId: fazenda.id,
+        id: 'breeder-gir-001',
+        name: 'Rajado do Sertão',
+        species: 'cattle',
+        breed: 'Gir',
+        fertilityScore: 58,
+        estimatedScore: 78,
+        totalInseminations: 8,
+        pregnancies: 3,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-santa-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-santa-001' },
       update: {},
       create: {
-        id: 'repr-santa-001',
-        nome: 'Zeus',
-        especie: 'bovino',
-        raca: 'Santa Gertrudis',
-        scoreFertilidade: 78,
-        scoreEstimado: 78,
-        totalInseminacoes: 0,
-        prenhezes: 0,
-        fazendaId: fazenda.id,
+        id: 'breeder-santa-001',
+        name: 'Zeus',
+        species: 'cattle',
+        breed: 'Santa Gertrudis',
+        fertilityScore: 78,
+        estimatedScore: 78,
+        totalInseminations: 0,
+        pregnancies: 0,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-dorper-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-dorper-001' },
       update: {},
       create: {
-        id: 'repr-dorper-001',
-        nome: 'Campeão Dorper',
-        especie: 'ovino',
-        raca: 'Dorper',
-        scoreFertilidade: 88,
-        scoreEstimado: 88,
-        totalInseminacoes: 15,
-        prenhezes: 13,
-        fazendaId: fazenda.id,
+        id: 'breeder-dorper-001',
+        name: 'Champion Dorper',
+        species: 'sheep',
+        breed: 'Dorper',
+        fertilityScore: 88,
+        estimatedScore: 88,
+        totalInseminations: 15,
+        pregnancies: 13,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-santaines-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-santaines-001' },
       update: {},
       create: {
-        id: 'repr-santaines-001',
-        nome: 'Nordestino',
-        especie: 'ovino',
-        raca: 'Santa Inês',
-        scoreFertilidade: 85,
-        scoreEstimado: 85,
-        totalInseminacoes: 10,
-        prenhezes: 8,
-        fazendaId: fazenda.id,
+        id: 'breeder-santaines-001',
+        name: 'Nordestino',
+        species: 'sheep',
+        breed: 'Santa Inês',
+        fertilityScore: 85,
+        estimatedScore: 85,
+        totalInseminations: 10,
+        pregnancies: 8,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-boer-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-boer-001' },
       update: {},
       create: {
-        id: 'repr-boer-001',
-        nome: 'Rei Boer',
-        especie: 'caprino',
-        raca: 'Boer',
-        scoreFertilidade: 85,
-        scoreEstimado: 85,
-        totalInseminacoes: 20,
-        prenhezes: 16,
-        fazendaId: fazenda.id,
+        id: 'breeder-boer-001',
+        name: 'King Boer',
+        species: 'goat',
+        breed: 'Boer',
+        fertilityScore: 85,
+        estimatedScore: 85,
+        totalInseminations: 20,
+        pregnancies: 16,
+        farmId: farm.id,
       },
     }),
-    prisma.reprodutor.upsert({
-      where: { id: 'repr-anglonubiana-001' },
+    prisma.breeder.upsert({
+      where: { id: 'breeder-anglonubian-001' },
       update: {},
       create: {
-        id: 'repr-anglonubiana-001',
-        nome: 'Sultão',
-        especie: 'caprino',
-        raca: 'Anglonubiana',
-        scoreFertilidade: 72,
-        scoreEstimado: 79,
-        totalInseminacoes: 6,
-        prenhezes: 3,
-        fazendaId: fazenda.id,
+        id: 'breeder-anglonubian-001',
+        name: 'Sultan',
+        species: 'goat',
+        breed: 'Anglo-Nubian',
+        fertilityScore: 72,
+        estimatedScore: 79,
+        totalInseminations: 6,
+        pregnancies: 3,
+        farmId: farm.id,
       },
     }),
   ]);
 
-  // ─── Animais ─────────────────────────────────────────────────────────────────
+  // ─── Animals ─────────────────────────────────────────────────────────────────
 
   await Promise.all([
 
-    // BOVINOS ──────────────────────────────────────────────────────────────────
+    // CATTLE ───────────────────────────────────────────────────────────────────
 
-    // Perfil ideal: peso ótimo, pós-parto ok, histórico limpo → alta probabilidade
+    // Ideal profile: optimal weight, postpartum ok, clean history → high probability
     prisma.animal.upsert({
-      where: { id: 'animal-vaca-001' },
+      where: { id: 'animal-cow-001' },
       update: {},
       create: {
-        id: 'animal-vaca-001',
-        identificador: 'BOV-001',
-        especie: 'bovino',
-        nome: 'Mimosa',
-        raca: 'Nelore',
-        sexo: 'femea',
-        dataNascimento: new Date('2021-03-15'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 2,
-        quantidadePartos: 2,
-        quantidadeAbortos: 0,
-        dataUltimoParto: dias(80),
-        scoreCondicaoCorporal: 4,
-        fazendaId: fazenda.id,
-        pesagens: {
+        id: 'animal-cow-001',
+        identifier: 'BOV-001',
+        species: 'cattle',
+        name: 'Mimosa',
+        breed: 'Nelore',
+        sex: 'female',
+        birthDate: new Date('2021-03-15'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 2,
+        birthCount: 2,
+        abortionCount: 0,
+        lastBirthDate: daysAgo(80),
+        bodyConditionScore: 4,
+        farmId: farm.id,
+        weighings: {
           create: [
-            { pesoKg: 410, dataPesagem: dias(180) },
-            { pesoKg: 430, dataPesagem: dias(90) },
-            { pesoKg: 445, dataPesagem: dias(5) },
+            { weightKg: 410, weighingDate: daysAgo(180) },
+            { weightKg: 430, weighingDate: daysAgo(90) },
+            { weightKg: 445, weighingDate: daysAgo(5) },
           ],
         },
       },
     }),
 
-    // Perfil de risco: pós-parto curto + histórico de aborto → probabilidade moderada
+    // Risk profile: short postpartum + abortion history → moderate probability
     prisma.animal.upsert({
-      where: { id: 'animal-vaca-002' },
+      where: { id: 'animal-cow-002' },
       update: {},
       create: {
-        id: 'animal-vaca-002',
-        identificador: 'BOV-002',
-        especie: 'bovino',
-        nome: 'Estrela',
-        raca: 'Girolando',
-        sexo: 'femea',
-        dataNascimento: new Date('2022-07-20'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 1,
-        quantidadePartos: 1,
-        quantidadeAbortos: 1,
-        dataUltimoParto: dias(30),
-        scoreCondicaoCorporal: 3,
-        historicoDoencaReprodutiva: false,
-        fazendaId: fazenda.id,
-        pesagens: {
+        id: 'animal-cow-002',
+        identifier: 'BOV-002',
+        species: 'cattle',
+        name: 'Estrela',
+        breed: 'Girolando',
+        sex: 'female',
+        birthDate: new Date('2022-07-20'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 1,
+        birthCount: 1,
+        abortionCount: 1,
+        lastBirthDate: daysAgo(30),
+        bodyConditionScore: 3,
+        reproductiveDiseaseHistory: false,
+        farmId: farm.id,
+        weighings: {
           create: [
-            { pesoKg: 370, dataPesagem: dias(60) },
-            { pesoKg: 390, dataPesagem: dias(10) },
+            { weightKg: 370, weighingDate: daysAgo(60) },
+            { weightKg: 390, weighingDate: daysAgo(10) },
           ],
         },
       },
     }),
 
-    // Perfil crítico: ECC baixo + doença reprodutiva + peso abaixo + prenhe anterior com aborto
+    // Critical profile: low BCS + reproductive disease + underweight + prior abortion
     prisma.animal.upsert({
-      where: { id: 'animal-vaca-003' },
+      where: { id: 'animal-cow-003' },
       update: {},
       create: {
-        id: 'animal-vaca-003',
-        identificador: 'BOV-003',
-        especie: 'bovino',
-        nome: 'Pérola',
-        raca: 'Brahman',
-        sexo: 'femea',
-        dataNascimento: new Date('2020-11-02'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 1,
-        quantidadePartos: 0,
-        quantidadeAbortos: 2,
-        dataUltimoParto: null,
-        scoreCondicaoCorporal: 2,
-        historicoDoencaReprodutiva: true,
-        fazendaId: fazenda.id,
-        pesagens: {
+        id: 'animal-cow-003',
+        identifier: 'BOV-003',
+        species: 'cattle',
+        name: 'Perola',
+        breed: 'Brahman',
+        sex: 'female',
+        birthDate: new Date('2020-11-02'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 1,
+        birthCount: 0,
+        abortionCount: 2,
+        bodyConditionScore: 2,
+        reproductiveDiseaseHistory: true,
+        farmId: farm.id,
+        weighings: {
           create: [
-            { pesoKg: 340, dataPesagem: dias(30) },
-            { pesoKg: 355, dataPesagem: dias(5) },
+            { weightKg: 340, weighingDate: daysAgo(30) },
+            { weightKg: 355, weighingDate: daysAgo(5) },
           ],
         },
       },
     }),
 
-    // Nulípara jovem: nunca pariu, boa condição, peso limítrofe → moderado
+    // Young nulliparous: never calved, good condition, borderline weight → moderate
     prisma.animal.upsert({
-      where: { id: 'animal-vaca-004' },
+      where: { id: 'animal-cow-004' },
       update: {},
       create: {
-        id: 'animal-vaca-004',
-        identificador: 'BOV-004',
-        especie: 'bovino',
-        nome: 'Aurora',
-        raca: 'Senepol',
-        sexo: 'femea',
-        dataNascimento: new Date('2023-05-18'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 0,
-        quantidadePartos: 0,
-        quantidadeAbortos: 0,
-        scoreCondicaoCorporal: 3,
-        fazendaId: fazenda.id,
-        pesagens: {
-          create: [{ pesoKg: 385, dataPesagem: dias(7) }],
+        id: 'animal-cow-004',
+        identifier: 'BOV-004',
+        species: 'cattle',
+        name: 'Aurora',
+        breed: 'Senepol',
+        sex: 'female',
+        birthDate: new Date('2023-05-18'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 0,
+        birthCount: 0,
+        abortionCount: 0,
+        bodyConditionScore: 3,
+        farmId: farm.id,
+        weighings: {
+          create: [{ weightKg: 385, weighingDate: daysAgo(7) }],
         },
       },
     }),
 
-    // OVINOS ───────────────────────────────────────────────────────────────────
+    // SHEEP ────────────────────────────────────────────────────────────────────
 
-    // Ovelha experiente, ótimo histórico → alta probabilidade
+    // Experienced ewe, excellent history → high probability
     prisma.animal.upsert({
-      where: { id: 'animal-ovelha-001' },
+      where: { id: 'animal-ewe-001' },
       update: {},
       create: {
-        id: 'animal-ovelha-001',
-        identificador: 'OVI-001',
-        especie: 'ovino',
-        nome: 'Branca',
-        raca: 'Dorper',
-        sexo: 'femea',
-        dataNascimento: new Date('2022-01-10'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 3,
-        quantidadePartos: 3,
-        quantidadeAbortos: 0,
-        dataUltimoParto: dias(90),
-        scoreCondicaoCorporal: 4,
-        fazendaId: fazenda.id,
-        pesagens: {
+        id: 'animal-ewe-001',
+        identifier: 'OVI-001',
+        species: 'sheep',
+        name: 'Branca',
+        breed: 'Dorper',
+        sex: 'female',
+        birthDate: new Date('2022-01-10'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 3,
+        birthCount: 3,
+        abortionCount: 0,
+        lastBirthDate: daysAgo(90),
+        bodyConditionScore: 4,
+        farmId: farm.id,
+        weighings: {
           create: [
-            { pesoKg: 48, dataPesagem: dias(120) },
-            { pesoKg: 52, dataPesagem: dias(10) },
+            { weightKg: 48, weighingDate: daysAgo(120) },
+            { weightKg: 52, weighingDate: daysAgo(10) },
           ],
         },
       },
     }),
 
-    // Ovelha com ECC baixo e pós-parto curto → moderado/alto risco
+    // Ewe with low BCS and short postpartum → moderate/high risk
     prisma.animal.upsert({
-      where: { id: 'animal-ovelha-002' },
+      where: { id: 'animal-ewe-002' },
       update: {},
       create: {
-        id: 'animal-ovelha-002',
-        identificador: 'OVI-002',
-        especie: 'ovino',
-        nome: 'Serena',
-        raca: 'Santa Inês',
-        sexo: 'femea',
-        dataNascimento: new Date('2022-09-14'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 1,
-        quantidadePartos: 1,
-        quantidadeAbortos: 0,
-        dataUltimoParto: dias(40),
-        scoreCondicaoCorporal: 2,
-        fazendaId: fazenda.id,
-        pesagens: {
-          create: [{ pesoKg: 38, dataPesagem: dias(5) }],
+        id: 'animal-ewe-002',
+        identifier: 'OVI-002',
+        species: 'sheep',
+        name: 'Serena',
+        breed: 'Santa Inês',
+        sex: 'female',
+        birthDate: new Date('2022-09-14'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 1,
+        birthCount: 1,
+        abortionCount: 0,
+        lastBirthDate: daysAgo(40),
+        bodyConditionScore: 2,
+        farmId: farm.id,
+        weighings: {
+          create: [{ weightKg: 38, weighingDate: daysAgo(5) }],
         },
       },
     }),
 
-    // Ovelha nulípara jovem, boa condição → moderado (sem histórico)
+    // Young nulliparous ewe, good condition → moderate (no history)
     prisma.animal.upsert({
-      where: { id: 'animal-ovelha-003' },
+      where: { id: 'animal-ewe-003' },
       update: {},
       create: {
-        id: 'animal-ovelha-003',
-        identificador: 'OVI-003',
-        especie: 'ovino',
-        nome: 'Lua',
-        raca: 'Morada Nova',
-        sexo: 'femea',
-        dataNascimento: new Date('2024-02-20'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 0,
-        quantidadePartos: 0,
-        quantidadeAbortos: 0,
-        scoreCondicaoCorporal: 4,
-        fazendaId: fazenda.id,
-        pesagens: {
-          create: [{ pesoKg: 47, dataPesagem: dias(3) }],
+        id: 'animal-ewe-003',
+        identifier: 'OVI-003',
+        species: 'sheep',
+        name: 'Lua',
+        breed: 'Morada Nova',
+        sex: 'female',
+        birthDate: new Date('2024-02-20'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 0,
+        birthCount: 0,
+        abortionCount: 0,
+        bodyConditionScore: 4,
+        farmId: farm.id,
+        weighings: {
+          create: [{ weightKg: 47, weighingDate: daysAgo(3) }],
         },
       },
     }),
 
-    // CAPRINOS ─────────────────────────────────────────────────────────────────
+    // GOATS ────────────────────────────────────────────────────────────────────
 
-    // Cabra experiente, histórico excelente → alta probabilidade
+    // Experienced doe, excellent history → high probability
     prisma.animal.upsert({
-      where: { id: 'animal-cabra-001' },
+      where: { id: 'animal-doe-001' },
       update: {},
       create: {
-        id: 'animal-cabra-001',
-        identificador: 'CAP-001',
-        especie: 'caprino',
-        nome: 'Nuvem',
-        raca: 'Boer',
-        sexo: 'femea',
-        dataNascimento: new Date('2022-04-05'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 2,
-        quantidadePartos: 2,
-        quantidadeAbortos: 0,
-        dataUltimoParto: dias(75),
-        scoreCondicaoCorporal: 4,
-        fazendaId: fazenda.id,
-        pesagens: {
+        id: 'animal-doe-001',
+        identifier: 'CAP-001',
+        species: 'goat',
+        name: 'Nuvem',
+        breed: 'Boer',
+        sex: 'female',
+        birthDate: new Date('2022-04-05'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 2,
+        birthCount: 2,
+        abortionCount: 0,
+        lastBirthDate: daysAgo(75),
+        bodyConditionScore: 4,
+        farmId: farm.id,
+        weighings: {
           create: [
-            { pesoKg: 36, dataPesagem: dias(90) },
-            { pesoKg: 40, dataPesagem: dias(5) },
+            { weightKg: 36, weighingDate: daysAgo(90) },
+            { weightKg: 40, weighingDate: daysAgo(5) },
           ],
         },
       },
     }),
 
-    // Cabra com aborto recente, ECC médio → moderado
+    // Doe with recent abortion, average BCS → moderate
     prisma.animal.upsert({
-      where: { id: 'animal-cabra-002' },
+      where: { id: 'animal-doe-002' },
       update: {},
       create: {
-        id: 'animal-cabra-002',
-        identificador: 'CAP-002',
-        especie: 'caprino',
-        nome: 'Flor',
-        raca: 'Anglonubiana',
-        sexo: 'femea',
-        dataNascimento: new Date('2022-08-12'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 1,
-        quantidadePartos: 1,
-        quantidadeAbortos: 1,
-        dataUltimoParto: dias(65),
-        scoreCondicaoCorporal: 3,
-        fazendaId: fazenda.id,
-        pesagens: {
-          create: [{ pesoKg: 37, dataPesagem: dias(8) }],
+        id: 'animal-doe-002',
+        identifier: 'CAP-002',
+        species: 'goat',
+        name: 'Flor',
+        breed: 'Anglo-Nubian',
+        sex: 'female',
+        birthDate: new Date('2022-08-12'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 1,
+        birthCount: 1,
+        abortionCount: 1,
+        lastBirthDate: daysAgo(65),
+        bodyConditionScore: 3,
+        farmId: farm.id,
+        weighings: {
+          create: [{ weightKg: 37, weighingDate: daysAgo(8) }],
         },
       },
     }),
 
-    // Cabra com doença reprodutiva + peso baixo → alto risco
+    // Doe with reproductive disease + underweight → high risk
     prisma.animal.upsert({
-      where: { id: 'animal-cabra-003' },
+      where: { id: 'animal-doe-003' },
       update: {},
       create: {
-        id: 'animal-cabra-003',
-        identificador: 'CAP-003',
-        especie: 'caprino',
-        nome: 'Rosa',
-        raca: 'Canindé',
-        sexo: 'femea',
-        dataNascimento: new Date('2021-12-20'),
-        statusReproducao: 'Apto',
-        historicoPrenhez: 0,
-        quantidadePartos: 0,
-        quantidadeAbortos: 1,
-        scoreCondicaoCorporal: 2,
-        historicoDoencaReprodutiva: true,
-        fazendaId: fazenda.id,
-        pesagens: {
-          create: [{ pesoKg: 28, dataPesagem: dias(4) }],
+        id: 'animal-doe-003',
+        identifier: 'CAP-003',
+        species: 'goat',
+        name: 'Rosa',
+        breed: 'Canindé',
+        sex: 'female',
+        birthDate: new Date('2021-12-20'),
+        reproductiveStatus: 'Ready',
+        pregnancyHistory: 0,
+        birthCount: 0,
+        abortionCount: 1,
+        bodyConditionScore: 2,
+        reproductiveDiseaseHistory: true,
+        farmId: farm.id,
+        weighings: {
+          create: [{ weightKg: 28, weighingDate: daysAgo(4) }],
         },
       },
     }),
   ]);
 
-  // ─── Eventos reprodutivos históricos ─────────────────────────────────────────
+  // ─── Reproductive events ─────────────────────────────────────────────────────
 
   await Promise.all([
-    // Mimosa — inseminação com diagnóstico positivo
-    prisma.eventoReprodutivo.create({
+    // Mimosa — insemination with positive diagnosis
+    prisma.reproductiveEvent.create({
       data: {
-        animalId: 'animal-vaca-001',
-        reprodutorId: 'repr-nelore-001',
-        tipoEvento: 'inseminacao_artificial',
-        inseminador: 'Dr. Carlos Veterinário',
-        protocoloReprodutivo: 'IATF',
-        dataEvento: dias(200),
-        diagnosticoPrenhez: 'positivo',
-        dataConfirmacao: dias(170),
-        resultado: 'Prenhez confirmada por ultrassom',
+        animalId: 'animal-cow-001',
+        breederId: 'breeder-nelore-001',
+        eventType: 'artificial_insemination',
+        inseminator: 'Dr. Carlos Veterinario',
+        reproductiveProtocol: 'FTAI',
+        eventDate: daysAgo(200),
+        pregnancyDiagnosis: 'positive',
+        confirmationDate: daysAgo(170),
+        result: 'Pregnancy confirmed by ultrasound',
       },
     }),
-    prisma.eventoReprodutivo.create({
+    prisma.reproductiveEvent.create({
       data: {
-        animalId: 'animal-vaca-001',
-        tipoEvento: 'parto',
-        dataEvento: dias(80),
-        diagnosticoPrenhez: 'positivo',
-        resultado: 'Parto normal, bezerra saudável',
-      },
-    }),
-
-    // Estrela — inseminação com falha + aborto registrado
-    prisma.eventoReprodutivo.create({
-      data: {
-        animalId: 'animal-vaca-002',
-        reprodutorId: 'repr-gir-001',
-        tipoEvento: 'inseminacao_artificial',
-        protocoloReprodutivo: 'Ovsynch',
-        dataEvento: dias(150),
-        diagnosticoPrenhez: 'negativo',
-        dataConfirmacao: dias(120),
-      },
-    }),
-    prisma.eventoReprodutivo.create({
-      data: {
-        animalId: 'animal-vaca-002',
-        reprodutorId: 'repr-angus-001',
-        tipoEvento: 'monta_natural',
-        dataEvento: dias(100),
-        diagnosticoPrenhez: 'positivo',
-      },
-    }),
-    prisma.eventoReprodutivo.create({
-      data: {
-        animalId: 'animal-vaca-002',
-        tipoEvento: 'aborto',
-        dataEvento: dias(30),
-        diagnosticoPrenhez: 'negativo',
-        resultado: 'Aborto aos 60 dias de gestação — causa investigada',
+        animalId: 'animal-cow-001',
+        eventType: 'birth',
+        eventDate: daysAgo(80),
+        pregnancyDiagnosis: 'positive',
+        result: 'Normal birth, healthy calf',
       },
     }),
 
-    // Branca (ovelha) — histórico positivo
-    prisma.eventoReprodutivo.create({
+    // Estrela — failed insemination + abortion
+    prisma.reproductiveEvent.create({
       data: {
-        animalId: 'animal-ovelha-001',
-        reprodutorId: 'repr-dorper-001',
-        tipoEvento: 'monta_controlada',
-        dataEvento: dias(270),
-        diagnosticoPrenhez: 'positivo',
-        dataConfirmacao: dias(240),
+        animalId: 'animal-cow-002',
+        breederId: 'breeder-gir-001',
+        eventType: 'artificial_insemination',
+        reproductiveProtocol: 'Ovsynch',
+        eventDate: daysAgo(150),
+        pregnancyDiagnosis: 'negative',
+        confirmationDate: daysAgo(120),
       },
     }),
-    prisma.eventoReprodutivo.create({
+    prisma.reproductiveEvent.create({
       data: {
-        animalId: 'animal-ovelha-001',
-        tipoEvento: 'parto',
-        dataEvento: dias(90),
-        diagnosticoPrenhez: 'positivo',
-        resultado: 'Parto gemelar, dois cordeiros saudáveis',
+        animalId: 'animal-cow-002',
+        breederId: 'breeder-angus-001',
+        eventType: 'natural_mating',
+        eventDate: daysAgo(100),
+        pregnancyDiagnosis: 'positive',
+      },
+    }),
+    prisma.reproductiveEvent.create({
+      data: {
+        animalId: 'animal-cow-002',
+        eventType: 'abortion',
+        eventDate: daysAgo(30),
+        pregnancyDiagnosis: 'negative',
+        result: 'Abortion at 60 days gestation — cause under investigation',
       },
     }),
 
-    // Nuvem (cabra) — histórico recente
-    prisma.eventoReprodutivo.create({
+    // Branca (ewe) — positive history
+    prisma.reproductiveEvent.create({
       data: {
-        animalId: 'animal-cabra-001',
-        reprodutorId: 'repr-boer-001',
-        tipoEvento: 'monta_natural',
-        dataEvento: dias(270),
-        diagnosticoPrenhez: 'positivo',
-        dataConfirmacao: dias(240),
+        animalId: 'animal-ewe-001',
+        breederId: 'breeder-dorper-001',
+        eventType: 'controlled_mating',
+        eventDate: daysAgo(270),
+        pregnancyDiagnosis: 'positive',
+        confirmationDate: daysAgo(240),
       },
     }),
-    prisma.eventoReprodutivo.create({
+    prisma.reproductiveEvent.create({
       data: {
-        animalId: 'animal-cabra-001',
-        tipoEvento: 'parto',
-        dataEvento: dias(75),
-        diagnosticoPrenhez: 'positivo',
-        resultado: 'Parto normal, cabrito saudável',
+        animalId: 'animal-ewe-001',
+        eventType: 'birth',
+        eventDate: daysAgo(90),
+        pregnancyDiagnosis: 'positive',
+        result: 'Twin birth, two healthy lambs',
+      },
+    }),
+
+    // Nuvem (doe) — recent history
+    prisma.reproductiveEvent.create({
+      data: {
+        animalId: 'animal-doe-001',
+        breederId: 'breeder-boer-001',
+        eventType: 'natural_mating',
+        eventDate: daysAgo(270),
+        pregnancyDiagnosis: 'positive',
+        confirmationDate: daysAgo(240),
+      },
+    }),
+    prisma.reproductiveEvent.create({
+      data: {
+        animalId: 'animal-doe-001',
+        eventType: 'birth',
+        eventDate: daysAgo(75),
+        pregnancyDiagnosis: 'positive',
+        result: 'Normal birth, healthy kid',
       },
     }),
   ]);
 
-  const totalAnimais = await prisma.animal.count({ where: { fazendaId: fazenda.id } });
-  const totalReprodutores = await prisma.reprodutor.count({ where: { fazendaId: fazenda.id } });
+  const totalAnimals = await prisma.animal.count({ where: { farmId: farm.id } });
+  const totalBreeders = await prisma.breeder.count({ where: { farmId: farm.id } });
 
-  console.log('\n✅ Seed concluído!');
-  console.log(`   Usuário : demo@pecuaria.ia  |  senha: 123456`);
-  console.log(`   Fazenda : ${fazenda.nome} (${fazenda.id})`);
-  console.log(`   Animais : ${totalAnimais}  |  Reprodutores: ${totalReprodutores}`);
-  console.log('\n   Perfis criados:');
-  console.log('   🟢 Alta prob  — Mimosa (BOV-001), Branca (OVI-001), Nuvem (CAP-001)');
-  console.log('   🟡 Moderado   — Estrela (BOV-002), Aurora (BOV-004), Serena (OVI-002), Lua (OVI-003), Flor (CAP-002)');
-  console.log('   🔴 Alto risco — Pérola (BOV-003), Rosa (CAP-003)');
+  console.log('\n Seed completed!');
+  console.log(`   User    : demo@insemiai.com  |  password: 123456`);
+  console.log(`   Farm    : ${farm.name} (${farm.id})`);
+  console.log(`   Animals : ${totalAnimals}  |  Breeders: ${totalBreeders}`);
+  console.log('\n   Profiles created:');
+  console.log('   HIGH prob   — Mimosa (BOV-001), Branca (OVI-001), Nuvem (CAP-001)');
+  console.log('   MODERATE    — Estrela (BOV-002), Aurora (BOV-004), Serena (OVI-002), Lua (OVI-003), Flor (CAP-002)');
+  console.log('   HIGH risk   — Perola (BOV-003), Rosa (CAP-003)');
 }
 
 main()

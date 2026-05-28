@@ -1,27 +1,33 @@
 import { Module } from '@nestjs/common';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { FazendasModule } from './fazendas/fazendas.module';
-import { AnimaisModule } from './animais/animais.module';
-import { PesagemModule } from './pesagem/pesagem.module';
-import { ReprodutoresModule } from './reprodutores/reprodutores.module';
-import { ReproducaoModule } from './reproducao/reproducao.module';
-import { IaModule } from './ia/ia.module';
-import { RelatoriosModule } from './relatorios/relatorios.module';
+import { FarmsModule } from './farms/farms.module';
+import { AnimalsModule } from './animals/animals.module';
+import { WeighingModule } from './weighing/weighing.module';
+import { BreedersModule } from './breeders/breeders.module';
+import { ReproductionModule } from './reproduction/reproduction.module';
+import { AiModule } from './ai/ai.module';
+import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { MembersModule } from './members/members.module';
+import { InvitationsModule } from './invitations/invitations.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
     PrismaModule,
+    MailModule,
     AuthModule,
-    FazendasModule,
-    AnimaisModule,
-    PesagemModule,
-    ReprodutoresModule,
-    ReproducaoModule,
-    IaModule,
-    RelatoriosModule,
+    FarmsModule,
+    AnimalsModule,
+    WeighingModule,
+    BreedersModule,
+    ReproductionModule,
+    AiModule,
+    ReportsModule,
     DashboardModule,
+    MembersModule,
+    InvitationsModule,
   ],
 })
 export class AppModule {}
