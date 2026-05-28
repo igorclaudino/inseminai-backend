@@ -21,7 +21,16 @@ const DEFAULT_SCORE_BY_SPECIES: Record<string, number> = {
   goat: 76,
 };
 
-export async function estimateBreederScore(species: string, breed: string): Promise<number> {
+/**
+ * Estimates a breeder fertility score based on breed lookup table.
+ * Falls back to an OpenAI prompt for unknown breeds if a client is provided,
+ * then falls back to a species default.
+ */
+export async function estimateBreederScore(
+  species: string,
+  breed: string,
+  openai?: OpenAI | null,
+): Promise<number> {
   const key = breed.toLowerCase().trim();
 
   const tableScore = BREED_SCORES[key];
@@ -31,9 +40,8 @@ export async function estimateBreederScore(species: string, breed: string): Prom
     if (key.includes(knownBreed) || knownBreed.includes(key)) return score;
   }
 
-  if (process.env.OPENAI_API_KEY) {
+  if (openai) {
     try {
-      const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
       const response = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [{

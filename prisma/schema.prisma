@@ -3,9 +3,43 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Species {
+  cattle
+  sheep
+  goat
+}
+
+enum AnimalSex {
+  male
+  female
+}
+
+enum MemberRole {
+  admin
+  operator
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+}
+
+enum AiProfileId {
+  essential
+  brief
+  standard
+  expert
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
   id        String   @id @default(uuid())
@@ -20,13 +54,13 @@ model User {
 }
 
 model Farm {
-  id                   String    @id @default(uuid())
+  id                   String      @id @default(uuid())
   name                 String
   city                 String?
   state                String?
-  averagePregnancyRate Int       @default(0)
-  aiProfile            String    @default("standard") // essential | brief | standard | expert
-  createdAt            DateTime  @default(now())
+  averagePregnancyRate Int         @default(0)
+  aiProfile            AiProfileId @default(standard)
+  createdAt            DateTime    @default(now())
   deletedAt            DateTime?
 
   ownerId String
@@ -41,13 +75,14 @@ model Farm {
 model Animal {
   id                         String    @id @default(uuid())
   identifier                 String
-  species                    String    // cattle | sheep | goat
+  species                    Species
   name                       String
   breed                      String
   lineage                    String?
-  sex                        String    // male | female
+  sex                        AnimalSex
   birthDate                  DateTime?
-  reproductiveStatus         String    @default("Ready") // Ready | Pregnant | In Reproduction | Culled | Inactive
+  // Ready | Pregnant | In Reproduction | Culled | Inactive
+  reproductiveStatus         String    @default("Ready")
   producer                   String?
   photoUrl                   String?
   active                     Boolean   @default(true)
@@ -84,6 +119,10 @@ model Animal {
   reproductiveEvents ReproductiveEvent[]
   predictions        Prediction[]
   breeder            Breeder?
+
+  @@unique([farmId, identifier])
+  @@index([farmId, active])
+  @@index([farmId, species])
 }
 
 model Weighing {
@@ -95,11 +134,13 @@ model Weighing {
 
   animalId String
   animal   Animal @relation(fields: [animalId], references: [id])
+
+  @@index([animalId, weighingDate])
 }
 
 model Breeder {
   id                 String    @id @default(uuid())
-  species            String    // cattle | sheep | goat
+  species            Species
   name               String
   breed              String
   fertilityScore     Int       @default(0)
@@ -118,6 +159,8 @@ model Breeder {
 
   reproductiveEvents ReproductiveEvent[]
   predictions        Prediction[]
+
+  @@index([farmId, active, species])
 }
 
 model ReproductiveEvent {
@@ -147,6 +190,8 @@ model ReproductiveEvent {
   breeder   Breeder? @relation(fields: [breederId], references: [id])
 
   prediction Prediction?
+
+  @@index([animalId, eventDate])
 }
 
 model Prediction {
@@ -164,11 +209,11 @@ model Prediction {
   season               String?
   createdAt            DateTime @default(now())
 
-  aiProfile    String @default("standard")
-  inputTokens  Int    @default(0)
-  outputTokens Int    @default(0)
+  aiProfile    AiProfileId @default(standard)
+  inputTokens  Int         @default(0)
+  outputTokens Int         @default(0)
   // pregnancy | best_breeder | best_dam
-  analysisType String @default("pregnancy")
+  analysisType String      @default("pregnancy")
 
   animalId String?
   animal   Animal? @relation(fields: [animalId], references: [id])
@@ -178,12 +223,14 @@ model Prediction {
 
   reproductiveEventId String?            @unique
   reproductiveEvent   ReproductiveEvent? @relation(fields: [reproductiveEventId], references: [id])
+
+  @@index([animalId, createdAt])
 }
 
 model FarmMember {
-  id       String   @id @default(uuid())
-  role     String   // admin | operator
-  joinedAt DateTime @default(now())
+  id       String     @id @default(uuid())
+  role     MemberRole
+  joinedAt DateTime   @default(now())
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id])
@@ -196,13 +243,13 @@ model FarmMember {
 }
 
 model FarmInvitation {
-  id        String   @id @default(uuid())
+  id        String           @id @default(uuid())
   email     String
-  role      String   // admin | operator
-  token     String   @unique @default(uuid())
-  status    String   @default("pending") // pending | accepted | expired
+  role      MemberRole
+  token     String           @unique @default(uuid())
+  status    InvitationStatus @default(pending)
   expiresAt DateTime
-  createdAt DateTime @default(now())
+  createdAt DateTime         @default(now())
 
   farmId      String
   farm        Farm   @relation(fields: [farmId], references: [id])
@@ -210,5 +257,6 @@ model FarmInvitation {
   invitedById String
   invitedBy   User   @relation("SentInvitations", fields: [invitedById], references: [id])
 
+  @@index([farmId, status])
   @@map("farm_invitations")
 }

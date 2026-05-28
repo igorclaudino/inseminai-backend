@@ -74,3 +74,16 @@ export const AI_PROFILES: Record<string, AiProfileConfig> = {
 
 export const VALID_AI_PROFILES = Object.keys(AI_PROFILES);
 export type AiProfileId = 'essential' | 'brief' | 'standard' | 'expert';
+
+export const AI_PRICING = {
+  /** GPT-4o-mini: US$ 0.150 per 1M input tokens */
+  inputPerToken: 0.15 / 1_000_000,
+  /** GPT-4o-mini: US$ 0.600 per 1M output tokens */
+  outputPerToken: 0.60 / 1_000_000,
+  /** Reference BRL/USD exchange rate for cost display */
+  usdToBrl: 5.7,
+} as const;
+
+export function calcCostUsd(inputTokens: number, outputTokens: number): number {
+  return inputTokens * AI_PRICING.inputPerToken + outputTokens * AI_PRICING.outputPerToken;
+}

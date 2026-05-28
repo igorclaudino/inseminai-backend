@@ -1,4 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import OpenAI from 'openai';
+import { Species } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBreederDto } from './dto/create-breeder.dto';
 import { UpdateBreederDto } from './dto/update-breeder.dto';
@@ -7,7 +9,13 @@ import { estimateBreederScore, calcBlendedScore } from './breeder-score';
 
 @Injectable()
 export class BreedersService {
-  constructor(private prisma: PrismaService) {}
+  private openai: OpenAI | null;
+
+  constructor(private prisma: PrismaService) {
+    this.openai = process.env.OPENAI_API_KEY
+      ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+      : null;
+  }
 
   async create(dto: CreateBreederDto, farmId: string) {
     let { species, name, breed } = dto;
@@ -26,12 +34,12 @@ export class BreedersService {
     const totalInseminations = dto.totalInseminations ?? 0;
     const pregnancies = dto.pregnancies ?? 0;
 
-    const estimatedScore = await estimateBreederScore(species, breed);
+    const estimatedScore = await estimateBreederScore(species, breed, this.openai);
     const fertilityScore = calcBlendedScore(pregnancies, totalInseminations, estimatedScore);
 
     return this.prisma.breeder.create({
       data: {
-        species, name, breed, farmId,
+        species: species as Species, name, breed, farmId,
         totalInseminations, pregnancies,
         estimatedScore, fertilityScore,
         ...(dto.animalId && { animalId: dto.animalId }),
@@ -41,7 +49,7 @@ export class BreedersService {
   }
 
   async list(farmId: string, species?: string, page = 1, limit = 20) {
-    const where = { farmId, active: true, ...(species && { species }) };
+    const where = { farmId, active: true, ...(species && { species: species as Species }) };
 
     const [breeders, total] = await Promise.all([
       this.prisma.breeder.findMany({
@@ -101,7 +109,7 @@ export class BreedersService {
     return this.prisma.breeder.update({
       where: { id },
       data: {
-        species, breed, animalId,
+        species: species as Species, breed, animalId,
         ...(dto.name && { name: dto.name }),
         ...(dto.totalInseminations !== undefined && { totalInseminations: dto.totalInseminations }),
         ...(dto.pregnancies !== undefined && { pregnancies: dto.pregnancies }),

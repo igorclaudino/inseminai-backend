@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Species } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
@@ -64,7 +65,7 @@ export class ReproductionService {
     const where = {
       animal: {
         farmId,
-        ...(filters.species && { species: filters.species }),
+        ...(filters.species && { species: filters.species as Species }),
         ...(filters.search && {
           OR: [
             { name: { contains: filters.search, mode: 'insensitive' as const } },

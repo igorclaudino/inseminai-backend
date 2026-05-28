@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { Species, AnimalSex } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAnimalDto } from './dto/create-animal.dto';
 import { UpdateAnimalDto } from './dto/update-animal.dto';
@@ -16,6 +17,8 @@ export class AnimalsService {
     return this.prisma.animal.create({
       data: {
         ...animalData,
+        species: animalData.species as Species,
+        sex: animalData.sex as AnimalSex,
         farmId,
         birthDate: animalData.birthDate ? new Date(animalData.birthDate) : undefined,
         weighings: initialWeight
@@ -36,8 +39,8 @@ export class AnimalsService {
       farmId,
       active: true,
       deletedAt: null,
-      ...(filters.species && { species: filters.species }),
-      ...(filters.sex && { sex: filters.sex }),
+      ...(filters.species && { species: filters.species as Species }),
+      ...(filters.sex && { sex: filters.sex as AnimalSex }),
       ...(filters.breed && { breed: filters.breed }),
       ...(filters.search && {
         OR: [
@@ -109,6 +112,8 @@ export class AnimalsService {
       where: { id },
       data: {
         ...animalData,
+        ...(animalData.species && { species: animalData.species as Species }),
+        ...(animalData.sex && { sex: animalData.sex as AnimalSex }),
         birthDate: animalData.birthDate ? new Date(animalData.birthDate) : undefined,
       },
     });

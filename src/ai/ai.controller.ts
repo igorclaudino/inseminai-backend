@@ -1,5 +1,6 @@
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AiService } from './ai.service';
 import { PredictPregnancyDto } from './dto/predict-pregnancy.dto';
 import { UpdateAiProfileDto } from './dto/update-ai-profile.dto';
@@ -8,15 +9,24 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { FarmGuard } from '../common/guards/farm.guard';
 import { FarmId } from '../common/decorators/farm-id.decorator';
 import { RequireAdmin } from '../common/decorators/require-admin.decorator';
+import { PredictPregnancyUseCase } from '../application/use-cases/predict-pregnancy.use-case';
+import { RecommendBreederUseCase } from '../application/use-cases/recommend-breeder.use-case';
+import { BestDamUseCase } from '../application/use-cases/best-dam.use-case';
 
 @UseGuards(JwtAuthGuard, FarmGuard)
 @ApiBearerAuth('JWT')
 @ApiTags('AI')
 @Controller('ai')
 export class AiController {
-  constructor(private aiService: AiService) {}
+  constructor(
+    private aiService: AiService,
+    private predictPregnancy: PredictPregnancyUseCase,
+    private recommendBreeder: RecommendBreederUseCase,
+    private bestDam: BestDamUseCase,
+  ) {}
 
   @Post('predict-pregnancy')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({
     summary: 'Predict pregnancy probability with AI analysis',
     description:
@@ -24,8 +34,8 @@ export class AiController {
       'according to the profile configured for the farm (Essential / Brief / Standard / Expert).',
   })
   @ApiResponse({ status: 201, description: 'Prediction generated successfully' })
-  predictPregnancy(@Body() dto: PredictPregnancyDto, @FarmId() farmId: string) {
-    return this.aiService.predictPregnancy(dto, farmId);
+  predictPregnancyHandler(@Body() dto: PredictPregnancyDto, @FarmId() farmId: string) {
+    return this.predictPregnancy.execute(dto, farmId);
   }
 
   @Get('profiles')
@@ -78,6 +88,7 @@ export class AiController {
   }
 
   @Get('recommend-breeder/:animalId')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({
     summary: 'Recommend Breeder — ranks breeders by compatibility with the female',
     description:
@@ -85,11 +96,12 @@ export class AiController {
       'Generates AI insight according to the configured profile.',
   })
   @ApiResponse({ status: 200, description: 'Breeder ranking with AI insight' })
-  recommendBreeder(@Param('animalId') animalId: string, @FarmId() farmId: string) {
-    return this.aiService.recommendBreeder(farmId, animalId);
+  recommendBreederHandler(@Param('animalId') animalId: string, @FarmId() farmId: string) {
+    return this.recommendBreeder.execute(farmId, animalId);
   }
 
   @Get('best-dam')
+  @Throttle({ default: { ttl: 60_000, limit: 10 } })
   @ApiOperation({
     summary: 'Best Dam — ranks females in the herd ready for insemination',
     description:
@@ -102,8 +114,8 @@ export class AiController {
   @ApiQuery({ name: 'season', required: false, enum: ['dry', 'rainy'] })
   @ApiQuery({ name: 'limit', required: false, example: 5, description: 'Number of animals in ranking (max 20)' })
   @ApiResponse({ status: 200, description: 'Best dam ranking with AI insight' })
-  bestDam(@Query() dto: BestDamDto, @FarmId() farmId: string) {
-    return this.aiService.bestDam(farmId, dto);
+  bestDamHandler(@Query() dto: BestDamDto, @FarmId() farmId: string) {
+    return this.bestDam.execute(farmId, dto);
   }
 
   @Get('history/farm')

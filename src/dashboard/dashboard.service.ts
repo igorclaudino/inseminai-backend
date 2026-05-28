@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Species } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 type Period = 'last_week' | 'last_month' | 'last_quarter' | 'last_year' | 'all';
@@ -11,7 +12,7 @@ export class DashboardService {
 
     const startDate = this.calcStartDate(period);
     const dateFilter = startDate ? { gte: startDate } : undefined;
-    const speciesFilter = species ? { species } : {};
+    const speciesFilter = species ? { species: species as Species } : {};
 
     const [
       totalAnimals,
@@ -28,9 +29,9 @@ export class DashboardService {
       this.prisma.animal.count({
         where: { farmId, active: true, ...speciesFilter, ...(startDate ? { createdAt: { lt: startDate } } : {}) },
       }),
-      this.prisma.breeder.count({ where: { farmId, active: true, ...(species ? { species } : {}) } }),
+      this.prisma.breeder.count({ where: { farmId, active: true, ...(species ? { species: species as Species } : {}) } }),
       this.prisma.breeder.count({
-        where: { farmId, active: true, ...(species ? { species } : {}), ...(startDate ? { createdAt: { lt: startDate } } : {}) },
+        where: { farmId, active: true, ...(species ? { species: species as Species } : {}), ...(startDate ? { createdAt: { lt: startDate } } : {}) },
       }),
       this.prisma.reproductiveEvent.count({
         where: {
