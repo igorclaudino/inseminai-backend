@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsIn, IsNumber, IsDateString, IsBoolean } from 'class-validator';
+import { IsString, IsOptional, IsIn, IsNumber, IsDateString, IsBoolean, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 const SPECIES = ['cattle', 'sheep', 'goat'];
@@ -46,14 +46,16 @@ export class CreateAnimalDto {
   @IsBoolean()
   reproductiveDiseaseHistory?: boolean;
 
-  @ApiPropertyOptional({ example: 'sire-id' })
+  @ApiPropertyOptional({ example: 'uuid-do-pai' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
+  @Transform(({ value }) => value || undefined)
   sireId?: string;
 
-  @ApiPropertyOptional({ example: 'dam-id' })
+  @ApiPropertyOptional({ example: 'uuid-da-mae' })
   @IsOptional()
-  @IsString()
+  @IsUUID()
+  @Transform(({ value }) => value || undefined)
   damId?: string;
 
   @ApiPropertyOptional({ example: 420.5 })
