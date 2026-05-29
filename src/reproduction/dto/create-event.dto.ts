@@ -1,16 +1,24 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsIn, IsOptional, IsDateString } from 'class-validator';
+import { IsIn, IsOptional, IsDateString, IsUUID, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 const EVENT_TYPES = ['artificial_insemination', 'natural_mating', 'controlled_mating', 'heat', 'birth', 'abortion', 'pregnancy'];
 
 export class CreateEventDto {
-  @ApiProperty({ example: 'animal-id-here' })
-  @IsString()
+  @ApiProperty({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'ID do animal — obtido via GET /animals',
+  })
+  @IsUUID()
   animalId: string;
 
-  @ApiPropertyOptional({ example: 'breeder-id-here' })
+  @ApiPropertyOptional({
+    example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+    description: 'ID do reprodutor — obtido via GET /breeders (opcional)',
+  })
   @IsOptional()
-  @IsString()
+  @IsUUID()
+  @Transform(({ value }) => value || undefined)
   breederId?: string;
 
   @ApiProperty({ example: 'artificial_insemination', enum: EVENT_TYPES })
@@ -22,26 +30,26 @@ export class CreateEventDto {
   @IsString()
   inseminator?: string;
 
-  @ApiPropertyOptional({ example: 'Nelore Lot A' })
+  @ApiPropertyOptional({ example: 'Sêmen Nelore Lote A' })
   @IsOptional()
   @IsString()
   semenUsed?: string;
 
-  @ApiPropertyOptional({ example: 'Lot-2024-001' })
+  @ApiPropertyOptional({ example: 'Lote-2026-001' })
   @IsOptional()
   @IsString()
   lot?: string;
 
-  @ApiPropertyOptional({ example: 'FTAI' })
+  @ApiPropertyOptional({ example: 'FTAI', description: 'Protocolo reprodutivo utilizado' })
   @IsOptional()
   @IsString()
   reproductiveProtocol?: string;
 
-  @ApiProperty({ example: '2024-06-01' })
+  @ApiProperty({ example: '2026-05-29', description: 'Data do evento (YYYY-MM-DD)' })
   @IsDateString()
   eventDate: string;
 
-  @ApiPropertyOptional({ example: 'Animal in good condition' })
+  @ApiPropertyOptional({ example: 'Animal em boa condição corporal' })
   @IsOptional()
   @IsString()
   notes?: string;
