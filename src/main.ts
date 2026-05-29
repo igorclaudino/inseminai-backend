@@ -20,6 +20,13 @@ async function bootstrap() {
     .setDescription('API de gestão genética e reprodutiva para bovinos, ovinos e caprinos')
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
+    .addGlobalParameters({
+      name: 'X-Farm-ID',
+      in: 'header',
+      required: false,
+      schema: { type: 'string', example: 'uuid-da-fazenda' },
+      description: 'ID da fazenda ativa — obrigatório em todas as rotas com FarmGuard',
+    })
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

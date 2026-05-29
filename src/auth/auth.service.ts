@@ -14,11 +14,26 @@ export class AuthService {
     if (exists) throw new ConflictException('E-mail already registered');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    const user = await this.prisma.user.create({
-      data: { name: dto.name, email: dto.email, password: hashedPassword },
+
+    const { user, farm } = await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: { name: dto.name, email: dto.email, password: hashedPassword },
+      });
+      const farm = await tx.farm.create({
+        data: { name: `Fazenda de ${dto.name}`, ownerId: user.id },
+      });
+      await tx.farmMember.create({
+        data: { farmId: farm.id, userId: user.id, role: 'admin' },
+      });
+      return { user, farm };
     });
 
-    return this.generateToken(user.id, user.email);
+    const access_token = this.jwt.sign({ sub: user.id, email: user.email });
+    return {
+      access_token,
+      user: { id: user.id, name: user.name, email: user.email },
+      farmId: farm.id,
+    };
   }
 
   async login(dto: LoginDto) {
@@ -28,11 +43,16 @@ export class AuthService {
     const valid = await bcrypt.compare(dto.password, user.password);
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
-    return this.generateToken(user.id, user.email);
-  }
+    const membership = await this.prisma.farmMember.findFirst({
+      where: { userId: user.id },
+      orderBy: { joinedAt: 'asc' },
+    });
 
-  private generateToken(userId: string, email: string) {
-    const token = this.jwt.sign({ sub: userId, email });
-    return { access_token: token };
+    const access_token = this.jwt.sign({ sub: user.id, email: user.email });
+    return {
+      access_token,
+      user: { id: user.id, name: user.name, email: user.email },
+      farmId: membership?.farmId ?? null,
+    };
   }
 }
