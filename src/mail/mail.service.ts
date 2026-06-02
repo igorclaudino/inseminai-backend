@@ -7,17 +7,43 @@ export class MailService {
   private transporter: nodemailer.Transporter | null = null;
 
   constructor() {
-    if (process.env.SMTP_HOST) {
+    if (process.env.MAIL_HOST) {
       this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT ?? '587'),
-        secure: process.env.SMTP_SECURE === 'true',
+        host: process.env.MAIL_HOST,
+        port: parseInt(process.env.MAIL_PORT ?? '587'),
+        secure: process.env.MAIL_SECURE === 'true',
         auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
         },
       });
     }
+  }
+
+  private get from() {
+    return process.env.MAIL_FROM ?? 'InsemiAI <noreply@insemiai.com>';
+  }
+
+  async sendTempPassword(params: { toEmail: string; name: string; tempPassword: string }) {
+    this.logger.log(`[SENHA TEMP] Para: ${params.toEmail} | Senha: ${params.tempPassword}`);
+
+    if (!this.transporter) return;
+
+    const html = `
+      <h2>Bem-vindo ao InsemiAI, ${params.name}!</h2>
+      <p>Sua conta de administrador foi criada. Use as credenciais abaixo para o primeiro acesso:</p>
+      <p><strong>E-mail:</strong> ${params.toEmail}</p>
+      <p><strong>Senha temporária:</strong> <code style="font-size:18px;background:#f3f4f6;padding:4px 8px;border-radius:4px;">${params.tempPassword}</code></p>
+      <p>Você será solicitado a definir uma nova senha no primeiro login.</p>
+      <p style="color:#6b7280;font-size:12px;">Se você não reconhece este cadastro, entre em contato com o suporte.</p>
+    `;
+
+    await this.transporter.sendMail({
+      from: this.from,
+      to: params.toEmail,
+      subject: 'InsemiAI — Sua conta foi criada',
+      html,
+    });
   }
 
   async sendFarmInvitation(params: {
@@ -44,7 +70,7 @@ export class MailService {
     `;
 
     await this.transporter.sendMail({
-      from: process.env.SMTP_FROM ?? 'InsemiAI <noreply@insemiai.com>',
+      from: this.from,
       to: params.toEmail,
       subject: `Convite para fazenda ${params.farmName} no InsemiAI`,
       html,

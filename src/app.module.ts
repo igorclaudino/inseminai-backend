@@ -16,6 +16,7 @@ import { MembersModule } from './members/members.module';
 import { InvitationsModule } from './invitations/invitations.module';
 import { MailModule } from './mail/mail.module';
 import { HealthModule } from './health/health.module';
+import { BackofficeModule } from './backoffice/backoffice.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { HealthModule } from './health/health.module';
     DashboardModule,
     MembersModule,
     InvitationsModule,
+    BackofficeModule,
     HealthModule,
   ],
 })

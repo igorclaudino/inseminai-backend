@@ -7,6 +7,7 @@ export const envValidationSchema = Joi.object({
   JWT_EXPIRES_IN: Joi.string().default('7d'),
   FRONTEND_URL: Joi.string().uri().default('http://localhost:3000'),
   PORT: Joi.number().default(3001),
+  BACKOFFICE_SECRET: Joi.string().min(16).required(),
   OPENAI_API_KEY: Joi.string().optional(),
   MAIL_HOST: Joi.string().optional(),
   MAIL_PORT: Joi.number().default(587),

@@ -20,6 +20,7 @@ async function bootstrap() {
     .setDescription('API de gestão genética e reprodutiva para bovinos, ovinos e caprinos')
     .setVersion('1.0')
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' }, 'JWT')
+    .addApiKey({ type: 'apiKey', in: 'header', name: 'X-Backoffice-Secret', description: 'Secret para rotas de backoffice' }, 'X-Backoffice-Secret')
     .addGlobalParameters({
       name: 'X-Farm-ID',
       in: 'header',
