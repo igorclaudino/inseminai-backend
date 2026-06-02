@@ -13,7 +13,10 @@ export class CreateWeighingDto {
   @IsNumber()
   weightKg: number;
 
-  @ApiProperty({ example: '2026-05-29', description: 'Data da pesagem (YYYY-MM-DD)' })
+  @ApiProperty({
+    example: '2026-05-29T14:30:00',
+    description: 'Data e hora da pesagem (YYYY-MM-DDTHH:mm:ss). Incluir o horário permite múltiplas pesagens no mesmo dia.',
+  })
   @IsDateString()
   weighingDate: string;
 
