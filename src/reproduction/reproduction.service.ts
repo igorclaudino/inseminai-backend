@@ -58,7 +58,7 @@ export class ReproductionService {
 
   async list(
     farmId: string,
-    filters: { search?: string; species?: string; pregnancyDiagnosis?: string; result?: string; from?: string; to?: string },
+    filters: { search?: string; species?: string; pregnancyDiagnosis?: string; result?: string; from?: string; to?: string; eventType?: string },
     page = 1,
     limit = 20,
   ) {
@@ -66,13 +66,14 @@ export class ReproductionService {
       animal: {
         farmId,
         ...(filters.species && { species: filters.species as Species }),
-        ...(filters.search && {
-          OR: [
-            { name: { contains: filters.search, mode: 'insensitive' as const } },
-            { identifier: { contains: filters.search, mode: 'insensitive' as const } },
-          ],
-        }),
       },
+      ...(filters.eventType && { eventType: filters.eventType }),
+      ...(filters.search && {
+        OR: [
+          { inseminator: { contains: filters.search, mode: 'insensitive' as const } },
+          { breeder: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+        ],
+      }),
       ...(filters.pregnancyDiagnosis && { pregnancyDiagnosis: filters.pregnancyDiagnosis }),
       ...(filters.result && { result: filters.result }),
       ...((filters.from || filters.to) && {

@@ -22,17 +22,20 @@ export class ReproductionController {
 
   @Get()
   @ApiOperation({ summary: 'List reproductive events for the farm' })
-  @ApiQuery({ name: 'search', required: false })
-  @ApiQuery({ name: 'species', required: false })
-  @ApiQuery({ name: 'pregnancyDiagnosis', required: false })
-  @ApiQuery({ name: 'from', required: false })
-  @ApiQuery({ name: 'to', required: false })
-  @ApiQuery({ name: 'page', required: false })
-  @ApiQuery({ name: 'limit', required: false })
+  @ApiQuery({ name: 'search', required: false, description: 'Busca por inseminador ou reprodutor' })
+  @ApiQuery({ name: 'species', required: false, enum: ['cattle', 'sheep', 'goat'] })
+  @ApiQuery({ name: 'eventType', required: false, description: 'Filtra por tipo de evento (ex: artificial_insemination)' })
+  @ApiQuery({ name: 'pregnancyDiagnosis', required: false, enum: ['positive', 'negative', 'conception_failure', 'pending'] })
+  @ApiQuery({ name: 'result', required: false })
+  @ApiQuery({ name: 'from', required: false, example: '2026-01-01' })
+  @ApiQuery({ name: 'to', required: false, example: '2026-12-31' })
+  @ApiQuery({ name: 'page', required: false, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, example: 20 })
   list(
     @FarmId() farmId: string,
     @Query('search') search: string,
     @Query('species') species: string,
+    @Query('eventType') eventType: string,
     @Query('pregnancyDiagnosis') pregnancyDiagnosis: string,
     @Query('result') result: string,
     @Query('from') from: string,
@@ -42,7 +45,7 @@ export class ReproductionController {
   ) {
     return this.reproductionService.list(
       farmId,
-      { search, species, pregnancyDiagnosis, result, from, to },
+      { search, species, eventType, pregnancyDiagnosis, result, from, to },
       page ? +page : 1, limit ? +limit : 20,
     );
   }
