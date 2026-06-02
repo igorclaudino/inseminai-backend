@@ -12,6 +12,12 @@ dist/
 # Prisma
 prisma/migrations/dev.db
 prisma/*.db
+prisma/seed.js
+prisma/seed.js.map
+prisma/seed.d.ts
+
+# TypeScript incremental build
+tsconfig.tsbuildinfo
 
 # Logs
 logs/
