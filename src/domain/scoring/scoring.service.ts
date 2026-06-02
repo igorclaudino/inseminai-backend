@@ -21,14 +21,15 @@ export class ScoringService {
       recommendations.push('Melhorar suplementação nutricional antes da inseminação');
     }
 
-    // 2. Período pós-parto
+    // 2. Período pós-parto (bovinos: 60 dias; ovinos/caprinos: 45 dias)
+    const minDaysPostpartum = input.species === 'cattle' ? 60 : 45;
     const daysPostpartum = calcDaysPostpartum(input.lastBirthDate);
-    if (daysPostpartum === 0 || daysPostpartum >= 60) {
+    if (daysPostpartum === 0 || daysPostpartum >= minDaysPostpartum) {
       score += 20;
-      if (daysPostpartum >= 60) positiveFactors.push(`Pós-parto adequado (${daysPostpartum} dias)`);
+      if (daysPostpartum >= minDaysPostpartum) positiveFactors.push(`Pós-parto adequado (${daysPostpartum} dias)`);
     } else {
-      alerts.push(`Pós-parto curto (${daysPostpartum} dias — ideal ≥ 60)`);
-      recommendations.push('Aguardar período pós-parto mínimo de 60 dias');
+      alerts.push(`Pós-parto curto (${daysPostpartum} dias — ideal ≥ ${minDaysPostpartum})`);
+      recommendations.push(`Aguardar período pós-parto mínimo de ${minDaysPostpartum} dias`);
     }
 
     // 3. Histórico reprodutivo
@@ -85,14 +86,19 @@ export class ScoringService {
       }
     }
 
-    // 9. Protocolo
+    // 9. Protocolo de sincronização
     if (input.protocol === 'IATF' || input.protocol === 'IATF com eCG') {
       score += 5;
       positiveFactors.push(`Protocolo ${input.protocol} — alta precisão de sincronização`);
+    } else if (input.protocol === 'Ovsynch' || input.protocol === 'Ressincronização') {
+      score += 3;
+      positiveFactors.push(`Protocolo ${input.protocol} — sincronização eficiente`);
     }
 
     // 10. Temperatura ambiente
-    if (input.ambientTemperature && input.ambientTemperature > 32) {
+    // Bovinos: estresse térmico > 32°C; ovinos/caprinos (raças adaptadas ao calor): > 35°C
+    const heatThreshold = input.species === 'cattle' ? 32 : 35;
+    if (input.ambientTemperature && input.ambientTemperature > heatThreshold) {
       score -= 5;
       alerts.push(`Temperatura elevada (${input.ambientTemperature}°C) — risco de estresse térmico`);
       recommendations.push('Realizar inseminação no período mais fresco do dia (madrugada/manhã cedo)');

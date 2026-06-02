@@ -102,14 +102,19 @@
 ## Dados disponíveis para a demo
 
 ### Animais
-| Identificador | Nome | Espécie | Status | Observação |
-|---|---|---|---|---|
-| 0020 | Mimosa | Bovino | Apto | 4 pesagens, 3 prenhezes, RFID |
-| 0021 | Garoa | Bovino | Apto | Inseminação pendente (28 dias) |
-| 0022 | Arrepiada | Bovino | Prenhe | Inseminação positiva registrada |
-| 0023 | Estrela | Bovino | Apto | Histórico de falha na concepção |
-| 0030 | Branca | Ovino | Apto | Santa Inês, histórico positivo |
-| 0005–0013 | Genealogia | — | — | Pais e mães dos animais principais |
+| Identificador | Nome | Espécie | Status | Prob. IA | Observação |
+|---|---|---|---|---|---|
+| 0020 | Mimosa | Bovino | Apto | 81% ↑ | 4 pesagens, 3 prenhezes, RFID |
+| 0021 | Garoa | Bovino | Apto | — | Inseminação pendente (28 dias) |
+| 0022 | Arrepiada | Bovino | Prenhe | 74% | Inseminação positiva registrada |
+| 0023 | Estrela | Bovino | Apto | — | Falha na concepção anterior |
+| 0030 | Branca | Ovino | Apto | 78% ↑ | Santa Inês, 2 prenhezes |
+| 0031 | Serena | Ovino | Apto | 47% ↓ | Pós-parto curto + ECC baixo |
+| 0032 | Luna | Ovino | Apto | — | Nulípara jovem |
+| 0040 | Nuvem | Caprino | Apto | 76% ↑ | Boer, 2 partos, boa condição |
+| 0041 | Flor | Caprino | Apto | 59% → | Anglonubiana, falha anterior |
+| 0042 | Rosa | Caprino | Apto | 42% ↓ | Alto risco: doença + baixo peso |
+| 0005–0013 | Genealogia | — | — | — | Pais e mães dos animais |
 
 ### Reprodutores
 | Nome | Espécie | Score | Taxa Real |
