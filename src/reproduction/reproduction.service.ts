@@ -163,10 +163,23 @@ export class ReproductionService {
     });
 
     if (dto.pregnancyDiagnosis === 'positive') {
-      await this.prisma.animal.update({
-        where: { id: event.animalId },
-        data: { pregnancyHistory: { increment: 1 }, reproductiveStatus: 'Pregnant' },
-      });
+      const confirmationDate = dto.confirmationDate ? new Date(dto.confirmationDate) : new Date();
+      await Promise.all([
+        this.prisma.animal.update({
+          where: { id: event.animalId },
+          data: { pregnancyHistory: { increment: 1 }, reproductiveStatus: 'Pregnant' },
+        }),
+        this.prisma.reproductiveEvent.create({
+          data: {
+            animalId: event.animalId,
+            sireId: event.sireId,
+            eventType: 'pregnancy',
+            eventDate: confirmationDate,
+            pregnancyDiagnosis: 'positive',
+            notes: `Prenhez confirmada — diagnóstico do evento de inseminação #${event.id.slice(-6)}`,
+          },
+        }),
+      ]);
       if (event.sireId) await this.updateSireFertility(event.sireId, true);
     } else if (['negative', 'conception_failure'].includes(dto.pregnancyDiagnosis)) {
       await this.prisma.animal.update({
