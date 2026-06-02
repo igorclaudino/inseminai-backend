@@ -7,6 +7,8 @@ import { DeleteAnimalDto } from './dto/delete-animal.dto';
 import { paginate } from '../common/dto/pagination.dto';
 import { calcDaysPostpartum } from '../common/helpers/days-postpartum';
 
+const SPECIES_PREFIX: Record<string, string> = { cattle: 'BOV', sheep: 'OVI', goat: 'CAP' };
+
 function calcAge(birthDate: Date | null | undefined): string | null {
   if (!birthDate) return null;
   const now = new Date();
@@ -23,12 +25,28 @@ function calcAge(birthDate: Date | null | undefined): string | null {
 export class AnimalsService {
   constructor(private prisma: PrismaService) {}
 
+  private async generateIdentifier(farmId: string, species: string): Promise<string> {
+    const prefix = SPECIES_PREFIX[species] ?? 'ANI';
+    const existing = await this.prisma.animal.findMany({
+      where: { farmId, identifier: { startsWith: `${prefix}-` } },
+      select: { identifier: true },
+    });
+    const numbers = existing
+      .map((a) => parseInt(a.identifier.replace(`${prefix}-`, ''), 10))
+      .filter((n) => !isNaN(n));
+    const next = numbers.length > 0 ? Math.max(...numbers) + 1 : 1;
+    return `${prefix}-${String(next).padStart(4, '0')}`;
+  }
+
   async create(dto: CreateAnimalDto, farmId: string) {
     const { initialWeight, initialWeighingDate, ...animalData } = dto;
+
+    const identifier = animalData.identifier ?? await this.generateIdentifier(farmId, animalData.species);
 
     return this.prisma.animal.create({
       data: {
         ...animalData,
+        identifier,
         species: animalData.species as Species,
         sex: animalData.sex as AnimalSex,
         farmId,

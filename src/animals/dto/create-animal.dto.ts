@@ -6,9 +6,13 @@ const SPECIES = ['cattle', 'sheep', 'goat'];
 const SEXES = ['male', 'female'];
 
 export class CreateAnimalDto {
-  @ApiProperty({ example: 'BOV-001', description: 'Identificador único do animal na fazenda' })
+  @ApiPropertyOptional({
+    example: 'BOV-0001',
+    description: 'Matrícula única do animal na fazenda. Se não informada, gerada automaticamente (BOV-0001, OVI-0001, CAP-0001)',
+  })
+  @IsOptional()
   @IsString()
-  identifier: string;
+  identifier?: string;
 
   @ApiPropertyOptional({ example: '587962', description: 'Código RFID do brinco eletrônico (opcional)' })
   @IsOptional()
