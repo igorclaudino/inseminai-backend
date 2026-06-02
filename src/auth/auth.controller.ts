@@ -63,6 +63,6 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'Password changed — returns new token, user and farmId' })
   @ApiResponse({ status: 400, description: 'Incorrect current password or password too short' })
   changePassword(@Body() dto: ChangePasswordDto, @CurrentUser() user: any) {
-    return this.authService.changePassword(user.sub, dto);
+    return this.authService.changePassword(user.id, dto);
   }
 }
