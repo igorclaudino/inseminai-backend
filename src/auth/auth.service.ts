@@ -1,14 +1,22 @@
 import { Injectable, ConflictException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
-  constructor(private prisma: PrismaService, private jwt: JwtService) {}
+  constructor(
+    private prisma: PrismaService,
+    private jwt: JwtService,
+    private mail: MailService,
+  ) {}
 
   async register(dto: RegisterDto) {
     const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
@@ -71,35 +79,88 @@ export class AuthService {
 
     const hashed = await bcrypt.hash(dto.newPassword, 10);
 
-    const { updatedUser, farm } = await this.prisma.$transaction(async (tx) => {
+    const { updatedUser, farmId } = await this.prisma.$transaction(async (tx) => {
       const updatedUser = await tx.user.update({
         where: { id: userId },
         data: { password: hashed, mustChangePassword: false },
       });
 
-      // create farm on first password change (admin onboarding)
-      let farm = null;
+      // resolve farm on first password change
+      let farmId: string | null = null;
       if (user.mustChangePassword) {
-        const hasFarm = await tx.farmMember.findFirst({ where: { userId } });
-        if (!hasFarm) {
-          farm = await tx.farm.create({
+        const existingMembership = await tx.farmMember.findFirst({
+          where: { userId },
+          orderBy: { joinedAt: 'asc' },
+        });
+        if (existingMembership) {
+          // invited user already has a farm
+          farmId = existingMembership.farmId;
+        } else {
+          // backoffice admin: create farm now
+          const farm = await tx.farm.create({
             data: { name: `Fazenda de ${user.name}`, ownerId: userId },
           });
           await tx.farmMember.create({
             data: { farmId: farm.id, userId, role: 'admin' },
           });
+          farmId = farm.id;
         }
       }
 
-      return { updatedUser, farm };
+      return { updatedUser, farmId };
     });
 
     const access_token = this.jwt.sign({ sub: updatedUser.id, email: updatedUser.email });
     return {
       access_token,
       user: { id: updatedUser.id, name: updatedUser.name, email: updatedUser.email },
-      farmId: farm?.id ?? null,
+      farmId,
       mustChangePassword: false,
     };
+  }
+
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const genericResponse = { message: 'If this e-mail is registered, you will receive a reset link shortly.' };
+
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!user) return genericResponse;
+
+    const token = randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordResetToken: token, passwordResetExpires: expires },
+    });
+
+    const resetUrl = `${process.env.FRONTEND_URL ?? 'http://localhost:3000'}/reset-password?token=${token}`;
+
+    await this.mail.sendPasswordReset({ toEmail: user.email, name: user.name, resetUrl });
+
+    return genericResponse;
+  }
+
+  async resetPassword(dto: ResetPasswordDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { passwordResetToken: dto.token },
+    });
+
+    if (!user || !user.passwordResetExpires || user.passwordResetExpires < new Date()) {
+      throw new BadRequestException('Invalid or expired reset token');
+    }
+
+    const hashed = await bcrypt.hash(dto.newPassword, 10);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashed,
+        mustChangePassword: false,
+        passwordResetToken: null,
+        passwordResetExpires: null,
+      },
+    });
+
+    return { message: 'Password reset successfully. You can now log in with your new password.' };
   }
 }

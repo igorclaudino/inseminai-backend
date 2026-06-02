@@ -46,6 +46,61 @@ export class MailService {
     });
   }
 
+  async sendPasswordReset(params: { toEmail: string; name: string; resetUrl: string }) {
+    this.logger.log(`[RESET SENHA] Para: ${params.toEmail} | Link: ${params.resetUrl}`);
+
+    if (!this.transporter) return;
+
+    const html = `
+      <h2>Redefinição de senha — InsemiAI</h2>
+      <p>Olá, ${params.name}! Recebemos uma solicitação para redefinir a senha da sua conta.</p>
+      <p>Clique no botão abaixo para criar uma nova senha:</p>
+      <p><a href="${params.resetUrl}" style="background:#2563eb;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;">Redefinir senha</a></p>
+      <p>Este link é válido por <strong>1 hora</strong>.</p>
+      <p style="color:#6b7280;font-size:12px;">Se você não solicitou a redefinição, ignore este e-mail — sua senha permanece a mesma.</p>
+    `;
+
+    await this.transporter.sendMail({
+      from: this.from,
+      to: params.toEmail,
+      subject: 'InsemiAI — Redefinição de senha',
+      html,
+    });
+  }
+
+  async sendInvitationWithTempPassword(params: {
+    toEmail: string;
+    name: string;
+    tempPassword: string;
+    farmName: string;
+    role: string;
+  }) {
+    const roleLabel = params.role === 'admin' ? 'Administrador' : 'Operador';
+
+    this.logger.log(
+      `[CONVITE+SENHA] Para: ${params.toEmail} | Fazenda: ${params.farmName} | Senha: ${params.tempPassword}`,
+    );
+
+    if (!this.transporter) return;
+
+    const html = `
+      <h2>Você foi convidado para a fazenda <strong>${params.farmName}</strong></h2>
+      <p>Sua conta no InsemiAI foi criada com o perfil <strong>${roleLabel}</strong>.</p>
+      <p>Use as credenciais abaixo para o primeiro acesso:</p>
+      <p><strong>E-mail:</strong> ${params.toEmail}</p>
+      <p><strong>Senha temporária:</strong> <code style="font-size:18px;background:#f3f4f6;padding:4px 8px;border-radius:4px;">${params.tempPassword}</code></p>
+      <p>Você será solicitado a definir uma nova senha no primeiro login.</p>
+      <p style="color:#6b7280;font-size:12px;">Se você não reconhece este convite, ignore este e-mail.</p>
+    `;
+
+    await this.transporter.sendMail({
+      from: this.from,
+      to: params.toEmail,
+      subject: `InsemiAI — Você foi convidado para ${params.farmName}`,
+      html,
+    });
+  }
+
   async sendFarmInvitation(params: {
     toEmail: string;
     farmName: string;

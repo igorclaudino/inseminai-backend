@@ -4,6 +4,8 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { InviteMemberDto } from './dto/invite-member.dto';
@@ -45,35 +47,58 @@ export class MembersService {
     }
 
     const existingUser = await this.prisma.user.findUnique({ where: { email: dto.email } });
+
     if (existingUser) {
       const alreadyMember = await this.prisma.farmMember.findUnique({
         where: { farmId_userId: { farmId, userId: existingUser.id } },
       });
-      if (alreadyMember) {
-        throw new ConflictException('This user is already a member of this farm');
-      }
+      if (alreadyMember) throw new ConflictException('This user is already a member of this farm');
     }
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    const invitation = await this.prisma.farmInvitation.create({
-      data: {
-        email: dto.email,
-        role: dto.role,
-        farmId,
-        invitedById: requesterId,
-        expiresAt,
-      },
-    });
-
-    const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
-    const acceptUrl = `${baseUrl}/invitations/${invitation.token}`;
-
     const inviter = await this.prisma.user.findUnique({
       where: { id: requesterId },
       select: { name: true },
     });
+
+    // ── Usuário SEM conta: cria conta + aceita convite automaticamente ─────────
+    if (!existingUser) {
+      const name = dto.name ?? dto.email.split('@')[0];
+      const tempPassword = this.generateTempPassword();
+      const hashed = await bcrypt.hash(tempPassword, 10);
+
+      await this.prisma.$transaction(async (tx) => {
+        const newUser = await tx.user.create({
+          data: { name, email: dto.email, password: hashed, mustChangePassword: true },
+        });
+        await tx.farmMember.create({
+          data: { farmId, userId: newUser.id, role: dto.role },
+        });
+        await tx.farmInvitation.create({
+          data: { email: dto.email, role: dto.role, farmId, invitedById: requesterId, expiresAt, status: 'accepted' },
+        });
+      });
+
+      await this.mail.sendInvitationWithTempPassword({
+        toEmail: dto.email,
+        name,
+        tempPassword,
+        farmName: farm!.name,
+        role: dto.role,
+      });
+
+      return { message: `Account created and invitation accepted for ${dto.email}`, accountCreated: true };
+    }
+
+    // ── Usuário COM conta: envia link de convite normalmente ──────────────────
+    const invitation = await this.prisma.farmInvitation.create({
+      data: { email: dto.email, role: dto.role, farmId, invitedById: requesterId, expiresAt },
+    });
+
+    const baseUrl = process.env.FRONTEND_URL ?? 'http://localhost:3000';
+    const acceptUrl = `${baseUrl}/invitations/${invitation.token}`;
 
     await this.mail.sendFarmInvitation({
       toEmail: dto.email,
@@ -87,6 +112,7 @@ export class MembersService {
       message: `Invitation sent to ${dto.email}`,
       invitationId: invitation.id,
       expiresAt,
+      accountCreated: false,
     };
   }
 
@@ -124,6 +150,12 @@ export class MembersService {
     await this.prisma.farmMember.delete({ where: { id: memberId } });
 
     return { message: 'Member removed from farm' };
+  }
+
+  private generateTempPassword(): string {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+    const bytes = randomBytes(12);
+    return Array.from(bytes).map((b) => chars[b % chars.length]).join('');
   }
 
   async listPendingInvitations(farmId: string) {
