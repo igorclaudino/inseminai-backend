@@ -2,6 +2,7 @@ import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards } from '@ne
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ReproductionService } from './reproduction.service';
 import { CreateEventDto } from './dto/create-event.dto';
+import { CreateInseminationDto } from './dto/create-insemination.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { FarmGuard } from '../common/guards/farm.guard';
@@ -14,8 +15,19 @@ import { FarmId } from '../common/decorators/farm-id.decorator';
 export class ReproductionController {
   constructor(private reproductionService: ReproductionService) {}
 
+  @Post('insemination')
+  @ApiOperation({
+    summary: 'Registrar nova inseminação',
+    description:
+      'Endpoint dedicado para inseminações artificiais. Define eventType=artificial_insemination automaticamente ' +
+      'e valida todos os campos obrigatórios do formulário de inseminação.',
+  })
+  createInsemination(@Body() dto: CreateInseminationDto, @FarmId() farmId: string) {
+    return this.reproductionService.createInsemination(dto, farmId);
+  }
+
   @Post('event')
-  @ApiOperation({ summary: 'Register reproductive event' })
+  @ApiOperation({ summary: 'Registrar evento reprodutivo genérico (parto, aborto, cio, etc.)' })
   createEvent(@Body() dto: CreateEventDto, @FarmId() farmId: string) {
     return this.reproductionService.createEvent(dto, farmId);
   }

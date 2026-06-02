@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Species } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
+import { CreateInseminationDto } from './dto/create-insemination.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { paginate } from '../common/dto/pagination.dto';
 import { BreedersService } from '../breeders/breeders.service';
@@ -54,6 +55,23 @@ export class ReproductionService {
     }
 
     return event;
+  }
+
+  async createInsemination(dto: CreateInseminationDto, farmId: string) {
+    return this.createEvent(
+      {
+        animalId: dto.animalId,
+        breederId: dto.breederId,
+        eventType: 'artificial_insemination',
+        inseminator: dto.inseminator,
+        semenUsed: dto.semenUsed,
+        lot: dto.lot,
+        reproductiveProtocol: dto.reproductiveProtocol,
+        eventDate: dto.eventDate,
+        notes: dto.notes,
+      },
+      farmId,
+    );
   }
 
   async list(
