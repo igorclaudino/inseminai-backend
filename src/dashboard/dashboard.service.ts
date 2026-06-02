@@ -9,7 +9,6 @@ export class DashboardService {
   constructor(private prisma: PrismaService) {}
 
   async summary(farmId: string, period: Period = 'last_month', species?: string) {
-
     const startDate = this.calcStartDate(period);
     const dateFilter = startDate ? { gte: startDate } : undefined;
     const speciesFilter = species ? { species: species as Species } : {};
@@ -17,22 +16,33 @@ export class DashboardService {
     const [
       totalAnimals,
       totalAnimalsBefore,
-      activeBreederCount,
-      activeBreederCountBefore,
+      activePregnancies,
+      activePregnanciesBefore,
       successfulInseminations,
       successfulInseminationsBefore,
       failedInseminations,
       failedInseminationsBefore,
       bySpecies,
     ] = await Promise.all([
+      // Total de animais ativos
       this.prisma.animal.count({ where: { farmId, active: true, ...speciesFilter } }),
       this.prisma.animal.count({
-        where: { farmId, active: true, ...speciesFilter, ...(startDate ? { createdAt: { lt: startDate } } : {}) },
+        where: {
+          farmId, active: true, ...speciesFilter,
+          ...(startDate ? { createdAt: { lt: startDate } } : {}),
+        },
       }),
-      this.prisma.breeder.count({ where: { farmId, active: true, ...(species ? { species: species as Species } : {}) } }),
-      this.prisma.breeder.count({
-        where: { farmId, active: true, ...(species ? { species: species as Species } : {}), ...(startDate ? { createdAt: { lt: startDate } } : {}) },
+      // Gravidezes ativas (status Pregnant no momento)
+      this.prisma.animal.count({
+        where: { farmId, active: true, reproductiveStatus: 'Pregnant', ...speciesFilter },
       }),
+      this.prisma.animal.count({
+        where: {
+          farmId, active: true, reproductiveStatus: 'Pregnant', ...speciesFilter,
+          ...(startDate ? { updatedAt: { lt: startDate } } : {}),
+        },
+      }),
+      // Inseminações com sucesso no período
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
@@ -47,17 +57,18 @@ export class DashboardService {
           ...(startDate ? { eventDate: { lt: startDate } } : {}),
         },
       }),
+      // Inseminações sem sucesso no período
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
-          pregnancyDiagnosis: { in: ['negative', 'failed'] },
+          pregnancyDiagnosis: { in: ['negative', 'conception_failure'] },
           ...(dateFilter ? { eventDate: dateFilter } : {}),
         },
       }),
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
-          pregnancyDiagnosis: { in: ['negative', 'failed'] },
+          pregnancyDiagnosis: { in: ['negative', 'conception_failure'] },
           ...(startDate ? { eventDate: { lt: startDate } } : {}),
         },
       }),
@@ -84,17 +95,22 @@ export class DashboardService {
     const chart = this.groupByMonth(chartEvents);
 
     const totalEvaluated = successfulInseminations + failedInseminations;
-    const pregnancyRate = totalEvaluated > 0 ? Math.round((successfulInseminations / totalEvaluated) * 100) : 0;
+    const pregnancyRate = totalEvaluated > 0
+      ? Math.round((successfulInseminations / totalEvaluated) * 100)
+      : 0;
 
-    const calcChange = (current: number, previous: number) =>
-      previous === 0 ? 0 : Math.round(((current - previous) / previous) * 100);
+    const card = (value: number, previous: number) => ({
+      value,
+      previous,
+      change: previous === 0 ? 0 : Math.round(((value - previous) / previous) * 100),
+    });
 
     return {
       cards: {
-        totalAnimals: { value: totalAnimals, change: calcChange(totalAnimals, totalAnimalsBefore) },
-        activeBreeders: { value: activeBreederCount, change: calcChange(activeBreederCount, activeBreederCountBefore) },
-        successfulInseminations: { value: successfulInseminations, change: calcChange(successfulInseminations, successfulInseminationsBefore) },
-        failedInseminations: { value: failedInseminations, change: calcChange(failedInseminations, failedInseminationsBefore) },
+        totalAnimals:             card(totalAnimals, totalAnimalsBefore),
+        activePregnancies:        card(activePregnancies, activePregnanciesBefore),
+        successfulInseminations:  card(successfulInseminations, successfulInseminationsBefore),
+        failedInseminations:      card(failedInseminations, failedInseminationsBefore),
         pregnancyRate,
       },
       chart,
