@@ -500,7 +500,7 @@ async function main() {
       recommendations: ['Garantir suplementação durante o período seco', 'Monitorar prenhez em 30 dias'],
       aiInsight:
         'Mimosa apresenta excelente perfil reprodutivo para a IATF. Com escore corporal 4/5, ' +
-        'histórico limpo de 3 prenhezes e o reprodutor Imperador do Sertão (score 88), ' +
+        'histórico limpo de 3 prenhezes e o reprodutor Bumbá (0005, score 88), ' +
         'a probabilidade de 81% reflete condições muito favoráveis. ' +
         'Atenção à suplementação mineral durante o período seco para manter o desempenho.',
       protocol: 'IATF', ambientTemperature: 26, season: 'dry',
@@ -600,7 +600,7 @@ async function main() {
       recommendations: ['Garantir suplementação durante o período seco', 'Monitorar prenhez em 30 dias'],
       aiInsight:
         'Nuvem é uma excelente candidata para IATF caprino. Raça Boer com alta conversão reprodutiva, ' +
-        'ECC ideal e histórico positivo de 2 partos. O reprodutor King Boer (score 86) reforça a compatibilidade genética. ' +
+        'ECC ideal e histórico positivo de 2 partos. O reprodutor King Boer (0008, score 86) reforça a compatibilidade genética. ' +
         'Atenção à mineralização no período seco, especialmente zinco e selênio.',
       protocol: 'IATF', ambientTemperature: 26, season: 'dry',
       aiProfile: 'standard' as any, inputTokens: 46, outputTokens: 88,

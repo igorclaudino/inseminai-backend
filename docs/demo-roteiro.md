@@ -4,6 +4,8 @@
 **Credenciais:** luiza@fazendauruguai.com.br / Demo@2026  
 **Fazenda:** Fazenda Uruguai — Crateús/CE
 
+> **Nota:** Reprodutores não são cadastrados separadamente. São os animais machos da própria fazenda. Para selecionar no formulário use `GET /animals?sex=male&species=<espécie>`.
+
 ---
 
 ## Passo 1 — Login e Dashboard (2 min)
@@ -21,8 +23,8 @@
 1. Navegar para **Animais**
 2. Mostrar a lista com genealogia (coluna Pai/Mãe com links)
 3. Filtrar por **Espécie: Bovino** e **Sexo: Fêmea** para focar nas matrizes
-4. Destacar as diferentes espécies: bovinos (0020–0023) e ovino (0030)
-5. Clicar em **Detalhes** da **Mimosa (0020)**
+4. Filtrar por **Sexo: Macho** para mostrar os reprodutores disponíveis (0005 Bumbá, 0006 Barão)
+5. Voltar para **Sexo: Fêmea** e clicar em **Detalhes** da **Mimosa (0020)**
 
 ---
 
@@ -45,7 +47,7 @@
 2. Preencher o formulário:
    - **Espécie:** Bovino
    - **Matriz:** 0020 - Mimosa
-   - **Reprodutor:** Imperador do Sertão
+   - **Reprodutor:** 0005 - Bumbá *(animal macho da fazenda)*
    - **Protocolo:** IATF
    - **Temperatura:** 26°C
    - **Estação:** Seca
@@ -53,7 +55,7 @@
 4. No resultado, destacar:
    - **81%** de Chance de Prenhez
    - **Score de Fertilidade** e **Compatibilidade Genética**
-   - **Fatores Positivos**: peso, pós-parto, histórico limpo, reprodutor de alta fertilidade
+   - **Fatores Positivos**: peso, pós-parto, histórico limpo, reprodutor de alta fertilidade (score 88)
    - **Alerta**: estação seca — maior risco nutricional
    - **Análise IA** (texto gerado pelo modelo)
 5. Clicar em **Salvar** — análise aparece no histórico do Dashboard
@@ -65,7 +67,7 @@
 1. Navegar para **Reprodução → Nova Inseminação**
 2. Preencher o formulário:
    - **Matriz:** 0021 - Garoa
-   - **Reprodutor:** Imperador do Sertão
+   - **Reprodutor:** 0005 - Bumbá *(selecionado do GET /animals?sex=male&species=cattle)*
    - **Inseminador:** Dr. Fernando Lima
    - **Sêmen:** Nelore MAX-102
    - **Lote:** Lote Junho 2026
@@ -78,7 +80,7 @@
 
 ## Passo 6 — Diagnóstico de Prenhez (2 min)
 
-> **Mostrar o ciclo completo: inseminação → diagnóstico**
+> **Mostrar o ciclo completo: inseminação → diagnóstico → evento de prenhez automático**
 
 1. Na tela de **Reprodução**, localizar a **Garoa (0021)** com inseminação de 28 dias atrás (status Pendente)
 2. Clicar em **Detalhes** → opção de atualizar diagnóstico
@@ -86,8 +88,12 @@
    - **Diagnóstico:** Positivo (Prenha)
    - **Resultado:** Prenhez confirmada por ultrassom
    - **Data de confirmação:** hoje
-4. Salvar — status atualiza para **Prenha**
-5. Mostrar que o Dashboard agora contabiliza mais uma gestação ativa
+4. Salvar — o sistema automaticamente:
+   - Atualiza status da Garoa para **Prenha**
+   - Cria um evento do tipo **"Prenhez"** no histórico reprodutivo do animal
+   - Incrementa o score de fertilidade do reprodutor Bumbá
+5. Entrar nos detalhes da Garoa → mostrar "Prenhez" como nova linha no histórico reprodutivo
+6. Mostrar que o Dashboard agora contabiliza mais uma gestação ativa
 
 ---
 
@@ -95,13 +101,13 @@
 
 1. Navegar para **Relatórios**
 2. Mostrar o **relatório geral da fazenda**: taxa de prenhez, total de inseminações
-3. Mostrar o **ranking de reprodutores**: Imperador do Sertão no topo (score 88, 79% taxa real)
+3. Mostrar o **ranking de reprodutores**: Bumbá (0005) no topo (score 88, 79% taxa real)
 
 ---
 
 ## Dados disponíveis para a demo
 
-### Animais
+### Animais fêmeas
 | Identificador | Nome | Espécie | Status | Prob. IA | Observação |
 |---|---|---|---|---|---|
 | 0020 | Mimosa | Bovino | Apto | 81% ↑ | 4 pesagens, 3 prenhezes, RFID |
@@ -114,20 +120,24 @@
 | 0040 | Nuvem | Caprino | Apto | 76% ↑ | Boer, 2 partos, boa condição |
 | 0041 | Flor | Caprino | Apto | 59% → | Anglonubiana, falha anterior |
 | 0042 | Rosa | Caprino | Apto | 42% ↓ | Alto risco: doença + baixo peso |
-| 0005–0013 | Genealogia | — | — | — | Pais e mães dos animais |
 
-### Reprodutores
-| Nome | Espécie | Score | Taxa Real |
-|---|---|---|---|
-| Imperador do Sertão | Bovino Nelore | 88 | 79% (19/24) |
-| Bandoleiro da FTI | Bovino Brahman | 73 | 67% (10/15) |
-| Nordestino Prime | Ovino Santa Inês | 85 | 83% (15/18) |
+### Animais machos (reprodutores)
+| Identificador | Nome | Espécie | fertilityScore | Taxa Real |
+|---|---|---|---|---|
+| 0005 | Bumbá | Bovino Nelore | 88 | 79% (19/24) |
+| 0006 | Barão | Bovino Brahman | 73 | 67% (10/15) |
+| 0007 | Carneiro 42 | Ovino Dorper | 85 | 83% (15/18) |
+| 0008 | King Boer | Caprino Boer | 86 | 80% (16/20) |
+| 0009–0013 | Pais/Mães | — | — | Genealogia |
 
 ### Inseminações existentes
 | Animal | Reprodutor | Protocolo | Diagnóstico |
 |---|---|---|---|
-| Mimosa | Imperador | IATF | ✅ Positivo (histórico) |
-| Garoa | Bandoleiro | Ovsynch | ⏳ Pendente (28 dias) |
-| Arrepiada | Imperador | IATF | ✅ Positivo (prenhe) |
-| Estrela | Bandoleiro | IATF com eCG | ❌ Falha na concepção |
-| Branca | Nordestino | IATF | ✅ Positivo (ovelha) |
+| Mimosa | 0005 Bumbá | IATF | ✅ Positivo (histórico) |
+| Garoa | 0006 Barão | Ovsynch | ⏳ Pendente (28 dias) |
+| Arrepiada | 0005 Bumbá | IATF | ✅ Positivo (prenhe) |
+| Estrela | 0006 Barão | IATF com eCG | ❌ Falha na concepção |
+| Branca | 0007 Carneiro 42 | IATF | ✅ Positivo (ovelha) |
+| Serena | 0007 Carneiro 42 | Ovsynch | ⏳ Pendente (20 dias) |
+| Nuvem | 0008 King Boer | IATF | ✅ Positivo (histórico) |
+| Flor | 0008 King Boer | Ressincronização | ⏳ Pendente (25 dias) |
