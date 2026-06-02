@@ -86,7 +86,7 @@ export class ScoringService {
     }
 
     // 9. Protocolo
-    if (input.protocol === 'FTAI' || input.protocol === 'FTAI with eCG') {
+    if (input.protocol === 'IATF' || input.protocol === 'IATF com eCG') {
       score += 5;
       positiveFactors.push(`Protocolo ${input.protocol} — alta precisão de sincronização`);
     }
