@@ -10,6 +10,11 @@ export class CreateAnimalDto {
   @IsString()
   identifier: string;
 
+  @ApiPropertyOptional({ example: '587962', description: 'Código RFID do brinco eletrônico (opcional)' })
+  @IsOptional()
+  @IsString()
+  rfid?: string;
+
   @ApiProperty({ example: 'cattle', enum: SPECIES })
   @IsIn(SPECIES)
   species: string;

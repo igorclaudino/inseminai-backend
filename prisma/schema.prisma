@@ -78,6 +78,7 @@ model Farm {
 model Animal {
   id                         String    @id @default(uuid())
   identifier                 String
+  rfid                       String?
   species                    Species
   name                       String
   breed                      String

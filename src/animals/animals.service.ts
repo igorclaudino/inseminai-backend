@@ -7,6 +7,18 @@ import { DeleteAnimalDto } from './dto/delete-animal.dto';
 import { paginate } from '../common/dto/pagination.dto';
 import { calcDaysPostpartum } from '../common/helpers/days-postpartum';
 
+function calcAge(birthDate: Date | null | undefined): string | null {
+  if (!birthDate) return null;
+  const now = new Date();
+  const months =
+    (now.getFullYear() - birthDate.getFullYear()) * 12 +
+    (now.getMonth() - birthDate.getMonth());
+  if (months < 1) return 'Menos de 1 mês';
+  if (months < 12) return `${months} ${months === 1 ? 'mês' : 'meses'}`;
+  const years = Math.floor(months / 12);
+  return `${years} ${years === 1 ? 'ano' : 'anos'}`;
+}
+
 @Injectable()
 export class AnimalsService {
   constructor(private prisma: PrismaService) {}
@@ -70,6 +82,7 @@ export class AnimalsService {
       ...a,
       daysPostpartum: calcDaysPostpartum(a.lastBirthDate),
       currentWeight: a.weighings[0]?.weightKg ?? null,
+      age: calcAge(a.birthDate),
     }));
 
     return paginate(data, total, page, limit);
@@ -98,6 +111,7 @@ export class AnimalsService {
       ...animal,
       daysPostpartum: calcDaysPostpartum(animal.lastBirthDate),
       currentWeight: animal.weighings[0]?.weightKg ?? null,
+      age: calcAge(animal.birthDate),
     };
   }
 
