@@ -52,6 +52,25 @@ export class CreateAnimalDto {
   reproductiveDiseaseHistory?: boolean;
 
   @ApiPropertyOptional({
+    example: 'Ready',
+    enum: ['Ready', 'Inactive'],
+    description: 'Status reprodutivo inicial: Ready (Apto) ou Inactive (Não Apto). Default: Ready',
+  })
+  @IsOptional()
+  @IsIn(['Ready', 'Inactive'])
+  reproductiveStatus?: string;
+
+  @ApiPropertyOptional({ example: 'Fazenda Uruguai', description: 'Nome do produtor ou propriedade de origem' })
+  @IsOptional()
+  @IsString()
+  producer?: string;
+
+  @ApiPropertyOptional({ example: 'https://storage.exemplo.com/foto.jpg', description: 'URL da foto do animal após upload' })
+  @IsOptional()
+  @IsString()
+  photoUrl?: string;
+
+  @ApiPropertyOptional({
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
     description: 'ID do pai (animal macho já cadastrado) — deixe vazio se não souber',
   })
