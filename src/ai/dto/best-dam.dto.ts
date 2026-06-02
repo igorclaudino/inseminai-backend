@@ -1,8 +1,7 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsIn, IsNumber } from 'class-validator';
 import { Transform } from 'class-transformer';
-
-const PROTOCOLS = ['FTAI', 'Ovsynch', 'FTAI with eCG', 'Resync', 'Natural Mating', 'Controlled Mating'];
+import { PROTOCOLS } from './protocols.constants';
 
 export class BestDamDto {
   @ApiPropertyOptional({ example: 'cattle', enum: ['cattle', 'sheep', 'goat'] })
@@ -10,12 +9,12 @@ export class BestDamDto {
   @IsIn(['cattle', 'sheep', 'goat'])
   species?: string;
 
-  @ApiPropertyOptional({ example: 'FTAI', enum: PROTOCOLS })
+  @ApiPropertyOptional({ example: 'IATF', enum: PROTOCOLS })
   @IsOptional()
   @IsIn(PROTOCOLS)
   protocol?: string;
 
-  @ApiPropertyOptional({ example: 28 })
+  @ApiPropertyOptional({ example: 26, description: 'Temperatura ambiente em °C' })
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => parseFloat(value))
@@ -26,7 +25,7 @@ export class BestDamDto {
   @IsIn(['dry', 'rainy'])
   season?: string;
 
-  @ApiPropertyOptional({ example: 5, description: 'Number of animals in ranking (default 5, max 20)' })
+  @ApiPropertyOptional({ example: 5, description: 'Número de animais no ranking (default 5, máx 20)' })
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => Math.min(20, Math.max(1, parseInt(value) || 5)))

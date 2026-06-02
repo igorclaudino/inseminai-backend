@@ -1,8 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsOptional, IsIn, IsNumber, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
-
-const PROTOCOLS = ['FTAI', 'Ovsynch', 'FTAI with eCG', 'Resync', 'Natural Mating', 'Controlled Mating'];
+import { PROTOCOLS } from './protocols.constants';
 
 export class PredictPregnancyDto {
   @ApiProperty({
@@ -21,12 +20,12 @@ export class PredictPregnancyDto {
   @Transform(({ value }) => value || undefined)
   breederId?: string;
 
-  @ApiPropertyOptional({ example: 'FTAI', enum: PROTOCOLS })
+  @ApiPropertyOptional({ example: 'IATF', enum: PROTOCOLS })
   @IsOptional()
   @IsIn(PROTOCOLS)
   protocol?: string;
 
-  @ApiPropertyOptional({ example: 28, description: 'Temperatura ambiente em °C' })
+  @ApiPropertyOptional({ example: 26, description: 'Temperatura ambiente em °C' })
   @IsOptional()
   @IsNumber()
   @Transform(({ value }) => parseFloat(value))
