@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: insemiai-backend
+    name: inseminai-backend
     runtime: node
     plan: free
     buildCommand: npm install --legacy-peer-deps && npm run build:prod
