@@ -46,8 +46,10 @@ model User {
   name               String
   email              String   @unique
   password           String
-  mustChangePassword Boolean  @default(false)
-  createdAt          DateTime @default(now())
+  mustChangePassword   Boolean   @default(false)
+  passwordResetToken   String?   @unique
+  passwordResetExpires DateTime?
+  createdAt            DateTime  @default(now())
 
   farms           Farm[]
   farmMemberships FarmMember[]     @relation("UserMemberships")

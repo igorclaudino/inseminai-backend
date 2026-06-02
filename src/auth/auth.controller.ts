@@ -4,6 +4,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -26,6 +28,27 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Request password reset link',
+    description: 'Sends a reset link to the e-mail if it is registered. Always returns the same response to avoid e-mail enumeration.',
+  })
+  @ApiResponse({ status: 201, description: 'Reset e-mail sent (or silently ignored if not found)' })
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Reset password using token from e-mail',
+    description: 'Validates the token (1 hour expiry) and sets the new password. Token is invalidated after use.',
+  })
+  @ApiResponse({ status: 201, description: 'Password reset successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 
   @Patch('password')
