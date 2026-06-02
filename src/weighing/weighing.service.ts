@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateWeighingDto } from './dto/create-weighing.dto';
+import { parseDateString } from '../common/helpers/parse-date';
 
 @Injectable()
 export class WeighingService {
@@ -15,7 +16,7 @@ export class WeighingService {
       data: {
         animalId: dto.animalId,
         weightKg: dto.weightKg,
-        weighingDate: new Date(dto.weighingDate),
+        weighingDate: parseDateString(dto.weighingDate),
         notes: dto.notes,
       },
     });

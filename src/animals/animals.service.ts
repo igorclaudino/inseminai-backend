@@ -6,6 +6,7 @@ import { UpdateAnimalDto } from './dto/update-animal.dto';
 import { DeleteAnimalDto } from './dto/delete-animal.dto';
 import { paginate } from '../common/dto/pagination.dto';
 import { calcDaysPostpartum } from '../common/helpers/days-postpartum';
+import { parseDateString } from '../common/helpers/parse-date';
 
 const SPECIES_PREFIX: Record<string, string> = { cattle: 'BOV', sheep: 'OVI', goat: 'CAP' };
 
@@ -50,7 +51,7 @@ export class AnimalsService {
         species: animalData.species as Species,
         sex: animalData.sex as AnimalSex,
         farmId,
-        birthDate: animalData.birthDate ? new Date(animalData.birthDate) : undefined,
+        birthDate: animalData.birthDate ? parseDateString(animalData.birthDate) : undefined,
         weighings: initialWeight
           ? { create: { weightKg: initialWeight, weighingDate: initialWeighingDate ? new Date(initialWeighingDate) : new Date() } }
           : undefined,
@@ -146,7 +147,7 @@ export class AnimalsService {
         ...animalData,
         ...(animalData.species && { species: animalData.species as Species }),
         ...(animalData.sex && { sex: animalData.sex as AnimalSex }),
-        birthDate: animalData.birthDate ? new Date(animalData.birthDate) : undefined,
+        birthDate: animalData.birthDate ? parseDateString(animalData.birthDate) : undefined,
       },
     });
   }

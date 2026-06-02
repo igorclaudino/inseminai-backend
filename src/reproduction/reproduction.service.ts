@@ -5,6 +5,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { CreateInseminationDto } from './dto/create-insemination.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { paginate } from '../common/dto/pagination.dto';
+import { parseDateString } from '../common/helpers/parse-date';
 
 @Injectable()
 export class ReproductionService {
@@ -24,7 +25,7 @@ export class ReproductionService {
         semenUsed: dto.semenUsed,
         lot: dto.lot,
         reproductiveProtocol: dto.reproductiveProtocol,
-        eventDate: new Date(dto.eventDate),
+        eventDate: parseDateString(dto.eventDate),
         notes: dto.notes,
         pregnancyDiagnosis: 'pending',
       },
@@ -46,7 +47,7 @@ export class ReproductionService {
     const animalUpdate: Record<string, any> = {};
     if (statusMap[dto.eventType]) animalUpdate.reproductiveStatus = statusMap[dto.eventType];
     if (dto.eventType === 'birth') {
-      animalUpdate.lastBirthDate = new Date(dto.eventDate);
+      animalUpdate.lastBirthDate = parseDateString(dto.eventDate);
       animalUpdate.birthCount = { increment: 1 };
     }
     if (dto.eventType === 'abortion') animalUpdate.abortionCount = { increment: 1 };
@@ -158,12 +159,12 @@ export class ReproductionService {
       data: {
         pregnancyDiagnosis: dto.pregnancyDiagnosis,
         result: dto.result,
-        confirmationDate: dto.confirmationDate ? new Date(dto.confirmationDate) : new Date(),
+        confirmationDate: dto.confirmationDate ? parseDateString(dto.confirmationDate) : new Date(),
       },
     });
 
     if (dto.pregnancyDiagnosis === 'positive') {
-      const confirmationDate = dto.confirmationDate ? new Date(dto.confirmationDate) : new Date();
+      const confirmationDate = dto.confirmationDate ? parseDateString(dto.confirmationDate) : new Date();
       await Promise.all([
         this.prisma.animal.update({
           where: { id: event.animalId },
