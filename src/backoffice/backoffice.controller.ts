@@ -1,26 +1,30 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiSecurity, ApiTags } from '@nestjs/swagger';
+import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { BackofficeService } from './backoffice.service';
 import { BackofficeGuard } from './guards/backoffice.guard';
 import { CreateAdminDto } from './dto/create-admin.dto';
 
 @ApiTags('Backoffice')
 @UseGuards(BackofficeGuard)
-@ApiSecurity('X-Backoffice-Secret')
+@ApiHeader({
+  name: 'X-Backoffice-Secret',
+  description: 'Secret de acesso ao backoffice (env BACKOFFICE_SECRET)',
+  required: true,
+})
 @Controller('backoffice')
 export class BackofficeController {
   constructor(private backofficeService: BackofficeService) {}
 
   @Post('create-admin')
   @ApiOperation({
-    summary: 'Create admin account with temporary password',
+    summary: 'Criar conta admin com senha temporária',
     description:
-      'Creates a user with mustChangePassword=true and sends a temporary password by e-mail. ' +
-      'Requires the X-Backoffice-Secret header. The admin will not have a farm until the first password change.',
+      'Cria um usuário com mustChangePassword=true e envia a senha temporária por e-mail. ' +
+      'Requer o header X-Backoffice-Secret. O admin não terá fazenda até a primeira troca de senha.',
   })
-  @ApiResponse({ status: 201, description: 'Admin created, e-mail sent' })
-  @ApiResponse({ status: 401, description: 'Invalid or missing backoffice secret' })
-  @ApiResponse({ status: 409, description: 'E-mail already registered' })
+  @ApiResponse({ status: 201, description: 'Admin criado, e-mail enviado' })
+  @ApiResponse({ status: 401, description: 'Secret inválido ou ausente' })
+  @ApiResponse({ status: 409, description: 'E-mail já cadastrado' })
   createAdmin(@Body() dto: CreateAdminDto) {
     return this.backofficeService.createAdmin(dto);
   }
