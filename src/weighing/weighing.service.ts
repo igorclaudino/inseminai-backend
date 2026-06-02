@@ -29,7 +29,7 @@ export class WeighingService {
 
     const weighings = await this.prisma.weighing.findMany({
       where: { animalId },
-      orderBy: { weighingDate: 'desc' },
+      orderBy: [{ weighingDate: 'desc' }, { createdAt: 'desc' }],
     });
 
     const latest = weighings[0] ?? null;
