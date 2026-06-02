@@ -97,4 +97,19 @@ export class CreateAnimalDto {
   @IsOptional()
   @IsDateString()
   initialWeighingDate?: string;
+
+  @ApiPropertyOptional({ example: 32.5, description: 'Peso ao nascer em kg' })
+  @IsOptional()
+  @IsNumber()
+  birthWeight?: number;
+
+  @ApiPropertyOptional({ example: 180.0, description: 'Peso ao desmame em kg' })
+  @IsOptional()
+  @IsNumber()
+  weaningWeight?: number;
+
+  @ApiPropertyOptional({ example: 0.85, description: 'Ganho de peso pré-desmame (GPP) em kg/dia' })
+  @IsOptional()
+  @IsNumber()
+  preWeaningWeightGain?: number;
 }
