@@ -1,5 +1,5 @@
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiBody } from '@nestjs/swagger';
-import { Controller, Post, Get, Patch, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AiService } from './ai.service';
 import { PredictPregnancyDto } from './dto/predict-pregnancy.dto';
@@ -116,6 +116,15 @@ export class AiController {
   @ApiResponse({ status: 200, description: 'Best dam ranking with AI insight' })
   bestDamHandler(@Query() dto: BestDamDto, @FarmId() farmId: string) {
     return this.bestDam.execute(farmId, dto);
+  }
+
+  @Delete('history/:id')
+  @RequireAdmin()
+  @ApiOperation({ summary: 'Excluir análise (admin only)' })
+  @ApiResponse({ status: 200, description: 'Análise excluída com sucesso' })
+  @ApiResponse({ status: 404, description: 'Análise não encontrada' })
+  deletePrediction(@Param('id') id: string, @FarmId() farmId: string) {
+    return this.aiService.deletePrediction(id, farmId);
   }
 
   @Get('history/farm')

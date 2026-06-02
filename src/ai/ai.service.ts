@@ -168,6 +168,20 @@ export class AiService {
     };
   }
 
+  async deletePrediction(predictionId: string, farmId: string) {
+    const prediction = await this.prisma.prediction.findUnique({
+      where: { id: predictionId },
+      include: { animal: { select: { farmId: true } } },
+    });
+
+    if (!prediction) throw new NotFoundException('Prediction not found');
+    if (prediction.animal?.farmId !== farmId) throw new NotFoundException('Prediction not found');
+
+    await this.prisma.prediction.delete({ where: { id: predictionId } });
+
+    return { message: 'Prediction deleted successfully' };
+  }
+
   async predictionHistory(animalId: string, farmId: string) {
     const animal = await this.prisma.animal.findUnique({ where: { id: animalId } });
     if (!animal) throw new NotFoundException('Animal not found');
