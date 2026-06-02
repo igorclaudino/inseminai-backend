@@ -3,7 +3,7 @@ import { AiProfileId } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { ScoringService } from '../../domain/scoring/scoring.service';
 import { AiInsightsService } from '../../ai/ai-insights.service';
-import { AI_PROFILES, AiProfileConfig, calcCostUsd } from '../../ai/ai-profile.constants';
+import { AI_PROFILES, AiProfileConfig } from '../../ai/ai-profile.constants';
 import { PredictPregnancyDto } from '../../ai/dto/predict-pregnancy.dto';
 import { ScoreOutput } from '../../domain/scoring/scoring.types';
 
@@ -37,8 +37,8 @@ export class PredictPregnancyUseCase {
     if (!animal) throw new NotFoundException('Animal not found');
     if (animal.farmId !== farmId) throw new NotFoundException('Animal not found');
 
-    const breeder = dto.breederId
-      ? await this.prisma.breeder.findUnique({ where: { id: dto.breederId } })
+    const sire = dto.sireId
+      ? await this.prisma.animal.findUnique({ where: { id: dto.sireId } })
       : null;
 
     const currentWeight = animal.weighings[0]?.weightKg ?? 0;
@@ -53,7 +53,7 @@ export class PredictPregnancyUseCase {
       reproductiveStatus: animal.reproductiveStatus,
       farmAveragePregnancyRate: animal.farm.averagePregnancyRate,
       currentWeight,
-      breeder,
+      sire: sire ? { fertilityScore: sire.fertilityScore } : null,
       protocol: dto.protocol,
       ambientTemperature: dto.ambientTemperature,
       season: dto.season,
@@ -68,7 +68,7 @@ export class PredictPregnancyUseCase {
     if (!profile.callsAi) {
       aiInsight = this.insights.generateLocal(animal, currentWeight, score);
     } else {
-      const result = await this.insights.generateForPrediction(animal, currentWeight, score, breeder, dto, profile);
+      const result = await this.insights.generateForPrediction(animal, currentWeight, score, sire, dto, profile);
       aiInsight = result.text;
       inputTokens = result.tokens.input;
       outputTokens = result.tokens.output;
@@ -92,7 +92,7 @@ export class PredictPregnancyUseCase {
         inputTokens,
         outputTokens,
         analysisType: 'pregnancy',
-        ...(dto.breederId && { breederId: dto.breederId }),
+        ...(dto.sireId && { sireId: dto.sireId }),
         ...(dto.reproductiveEventId && { reproductiveEventId: dto.reproductiveEventId }),
       },
     });

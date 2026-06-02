@@ -70,7 +70,7 @@ export class ReportsService {
     const [events, predictions] = await Promise.all([
       this.prisma.reproductiveEvent.findMany({
         where: { animalId },
-        include: { breeder: true },
+        include: { sireAnimal: { select: { id: true, name: true, identifier: true } } },
         orderBy: { eventDate: 'desc' },
       }),
       this.prisma.prediction.findMany({
@@ -123,7 +123,7 @@ export class ReportsService {
         id: e.id,
         date: e.eventDate,
         type: e.eventType,
-        breeder: e.breeder?.name || null,
+        sire: e.sireAnimal ? `${e.sireAnimal.identifier} - ${e.sireAnimal.name}` : null,
         result: e.pregnancyDiagnosis,
         confirmation: e.confirmationDate,
       })),
@@ -131,17 +131,18 @@ export class ReportsService {
   }
 
   async breederRanking(farmId: string) {
-    return this.prisma.breeder.findMany({
-      where: { farmId, active: true },
+    return this.prisma.animal.findMany({
+      where: { farmId, sex: 'male', active: true, totalInseminations: { gt: 0 } },
       orderBy: { fertilityScore: 'desc' },
       select: {
         id: true,
+        identifier: true,
         name: true,
         species: true,
         breed: true,
         fertilityScore: true,
         totalInseminations: true,
-        pregnancies: true,
+        pregnanciesAsBreeder: true,
       },
     });
   }

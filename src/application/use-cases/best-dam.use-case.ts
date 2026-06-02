@@ -53,7 +53,7 @@ export class BestDamUseCase {
           reproductiveStatus: animal.reproductiveStatus,
           farmAveragePregnancyRate: animal.farm.averagePregnancyRate,
           currentWeight,
-          protocol: dto.protocol ?? 'FTAI',
+          protocol: dto.protocol ?? 'IATF',
           ambientTemperature: dto.ambientTemperature,
           season: dto.season,
         });

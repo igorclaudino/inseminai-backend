@@ -7,7 +7,6 @@ import { AuthModule } from './auth/auth.module';
 import { FarmsModule } from './farms/farms.module';
 import { AnimalsModule } from './animals/animals.module';
 import { WeighingModule } from './weighing/weighing.module';
-import { BreedersModule } from './breeders/breeders.module';
 import { ReproductionModule } from './reproduction/reproduction.module';
 import { AiModule } from './ai/ai.module';
 import { ReportsModule } from './reports/reports.module';
@@ -32,7 +31,6 @@ import { BackofficeModule } from './backoffice/backoffice.module';
     FarmsModule,
     AnimalsModule,
     WeighingModule,
-    BreedersModule,
     ReproductionModule,
     AiModule,
     ReportsModule,

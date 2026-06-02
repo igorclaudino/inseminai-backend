@@ -42,10 +42,10 @@ enum AiProfileId {
 // ─── Models ───────────────────────────────────────────────────────────────────
 
 model User {
-  id                 String   @id @default(uuid())
-  name               String
-  email              String   @unique
-  password           String
+  id                   String    @id @default(uuid())
+  name                 String
+  email                String    @unique
+  password             String
   mustChangePassword   Boolean   @default(false)
   passwordResetToken   String?   @unique
   passwordResetExpires DateTime?
@@ -70,7 +70,6 @@ model Farm {
   owner   User   @relation(fields: [ownerId], references: [id])
 
   animals     Animal[]
-  breeders    Breeder[]
   members     FarmMember[]
   invitations FarmInvitation[]
 }
@@ -95,6 +94,7 @@ model Animal {
   createdAt                  DateTime  @default(now())
   updatedAt                  DateTime  @updatedAt
 
+  // Reproductive history (as female)
   pregnancyHistory           Int       @default(0)
   abortionCount              Int       @default(0)
   birthCount                 Int       @default(0)
@@ -104,13 +104,20 @@ model Animal {
   bodyConditionScore         Int       @default(3)
   reproductiveDiseaseHistory Boolean   @default(false)
 
-  birthWeight           Float?
-  preWeaningWeightGain  Float?
-  weaningWeight         Float?
+  // Growth metrics
+  birthWeight          Float?
+  preWeaningWeightGain Float?
+  weaningWeight        Float?
+
+  // Sire performance tracking (when used as male in inseminations)
+  fertilityScore       Int @default(0)
+  totalInseminations   Int @default(0)
+  pregnanciesAsBreeder Int @default(0)
 
   farmId String
   farm   Farm   @relation(fields: [farmId], references: [id])
 
+  // Genealogy
   sireId        String?
   sire          Animal?  @relation("OffspringSire", fields: [sireId], references: [id])
   sireOffspring Animal[] @relation("OffspringSire")
@@ -119,10 +126,11 @@ model Animal {
   dam          Animal?  @relation("OffspringDam", fields: [damId], references: [id])
   damOffspring Animal[] @relation("OffspringDam")
 
-  weighings          Weighing[]
-  reproductiveEvents ReproductiveEvent[]
-  predictions        Prediction[]
-  breeder            Breeder?
+  weighings             Weighing[]
+  reproductiveEvents    ReproductiveEvent[]
+  predictions           Prediction[]
+  inseminationsAsSire   ReproductiveEvent[] @relation("InseminationSire")
+  predictionsAsSire     Prediction[]        @relation("PredictionSire")
 
   @@unique([farmId, identifier])
   @@index([farmId, active])
@@ -140,31 +148,6 @@ model Weighing {
   animal   Animal @relation(fields: [animalId], references: [id])
 
   @@index([animalId, weighingDate])
-}
-
-model Breeder {
-  id                 String    @id @default(uuid())
-  species            Species
-  name               String
-  breed              String
-  fertilityScore     Int       @default(0)
-  estimatedScore     Int       @default(0)
-  totalInseminations Int       @default(0)
-  pregnancies        Int       @default(0)
-  active             Boolean   @default(true)
-  deletedAt          DateTime?
-  createdAt          DateTime  @default(now())
-
-  farmId String
-  farm   Farm   @relation(fields: [farmId], references: [id])
-
-  animalId String? @unique
-  animal   Animal? @relation(fields: [animalId], references: [id])
-
-  reproductiveEvents ReproductiveEvent[]
-  predictions        Prediction[]
-
-  @@index([farmId, active, species])
 }
 
 model ReproductiveEvent {
@@ -190,8 +173,8 @@ model ReproductiveEvent {
   animalId String
   animal   Animal @relation(fields: [animalId], references: [id])
 
-  breederId String?
-  breeder   Breeder? @relation(fields: [breederId], references: [id])
+  sireId     String?
+  sireAnimal Animal?  @relation("InseminationSire", fields: [sireId], references: [id])
 
   prediction Prediction?
 
@@ -222,8 +205,8 @@ model Prediction {
   animalId String?
   animal   Animal? @relation(fields: [animalId], references: [id])
 
-  breederId String?
-  breeder   Breeder? @relation(fields: [breederId], references: [id])
+  sireId     String?
+  sireAnimal Animal?  @relation("PredictionSire", fields: [sireId], references: [id])
 
   reproductiveEventId String?            @unique
   reproductiveEvent   ReproductiveEvent? @relation(fields: [reproductiveEventId], references: [id])

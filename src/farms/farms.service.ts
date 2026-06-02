@@ -27,7 +27,7 @@ export class FarmsService {
 
     const farms = await this.prisma.farm.findMany({
       where: { id: { in: farmIds }, deletedAt: null },
-      include: { _count: { select: { animals: true, breeders: true } } },
+      include: { _count: { select: { animals: true, members: true } } },
       orderBy: { createdAt: 'desc' },
     });
 
@@ -37,7 +37,7 @@ export class FarmsService {
   async getCurrent(farmId: string, memberRole: string) {
     const farm = await this.prisma.farm.findUnique({
       where: { id: farmId, deletedAt: null },
-      include: { _count: { select: { animals: true, breeders: true } } },
+      include: { _count: { select: { animals: true, members: true } } },
     });
     if (!farm) throw new NotFoundException('Farm not found');
     return { ...farm, myRole: memberRole };

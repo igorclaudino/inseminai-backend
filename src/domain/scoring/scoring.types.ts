@@ -9,7 +9,7 @@ export interface ScoreInput {
   reproductiveStatus: string;
   farmAveragePregnancyRate?: number;
   currentWeight: number;
-  breeder?: { fertilityScore: number } | null;
+  sire?: { fertilityScore: number } | null;
   protocol?: string;
   ambientTemperature?: number;
   season?: string;

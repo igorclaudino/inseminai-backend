@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
-import type { Animal, Farm, Breeder } from '@prisma/client';
+import type { Animal, Farm } from '@prisma/client';
 import { AiProfileConfig } from './ai-profile.constants';
 import { ScoreOutput } from '../domain/scoring/scoring.types';
 import { PredictPregnancyDto } from './dto/predict-pregnancy.dto';
@@ -38,7 +38,7 @@ export class AiInsightsService {
     animal: Animal,
     currentWeight: number,
     score: ScoreOutput,
-    breeder: Breeder | null,
+    sire: Animal | null,
     dto: PredictPregnancyDto,
     profile: AiProfileConfig,
   ): Promise<InsightResult> {
@@ -48,22 +48,22 @@ export class AiInsightsService {
 
     const prompt =
       profile.id === 'expert'
-        ? this.buildExpertPrompt(animal, currentWeight, score, breeder, dto)
+        ? this.buildExpertPrompt(animal, currentWeight, score, sire, dto)
         : profile.id === 'brief'
           ? this.buildBriefPrompt(animal, currentWeight, score)
-          : this.buildStandardPrompt(animal, currentWeight, score, breeder, dto);
+          : this.buildStandardPrompt(animal, currentWeight, score, sire, dto);
 
     return this.callOpenAI(prompt, profile, () => this.generateLocal(animal, currentWeight, score));
   }
 
-  async generateForBreeder(
+  async generateForRecommendBreeder(
     animal: Animal,
     currentWeight: number,
-    ranking: Array<{ breeder: Breeder; compatibility: number; classification: string }>,
+    ranking: Array<{ animal: Animal; compatibility: number; classification: string }>,
     profile: AiProfileConfig,
   ): Promise<InsightResult> {
     const best = ranking[0];
-    const fallback = `Reprodutor recomendado: ${best.breeder.name} (${best.breeder.breed}, compatibilidade ${best.compatibility}/100).`;
+    const fallback = `Reprodutor recomendado: ${best.animal.name} (${best.animal.breed}, compatibilidade ${best.compatibility}/100).`;
 
     if (!this.openai) return { text: fallback, tokens: { input: 0, output: 0 } };
 
@@ -76,9 +76,9 @@ export class AiInsightsService {
         `${animal.pregnancyHistory} prenhezes anteriores, ${animal.abortionCount} aborto(s).\n\n` +
         `Reprodutores disponíveis (por compatibilidade):\n` +
         top3.map((r, i) =>
-          `${i + 1}. ${r.breeder.name} — ${r.breeder.breed} | Score fertilidade: ${r.breeder.fertilityScore}/100 | ` +
+          `${i + 1}. ${r.animal.name} — ${r.animal.breed} | Score fertilidade: ${r.animal.fertilityScore}/100 | ` +
           `Compatibilidade calculada: ${r.compatibility}/100 | ` +
-          `Histórico: ${r.breeder.pregnancies} prenhezes em ${r.breeder.totalInseminations} inseminações | ${r.classification}`
+          `Histórico: ${r.animal.pregnanciesAsBreeder} prenhezes em ${r.animal.totalInseminations} inseminações | ${r.classification}`,
         ).join('\n') + '\n\n' +
         `Em 3-4 frases técnicas: (1) justifique a recomendação do 1º colocado, (2) compare com a alternativa, ` +
         `(3) mencione critérios genéticos e de adaptação ao semiárido nordestino.`;
@@ -86,13 +86,13 @@ export class AiInsightsService {
       const top2 = ranking.slice(0, 2);
       prompt =
         `${animal.species} ${animal.breed} fêmea. Reprodutores: ` +
-        top2.map((r) => `${r.breeder.name} (${r.breeder.breed}, compatibilidade ${r.compatibility}/100)`).join(', ') +
+        top2.map((r) => `${r.animal.name} (${r.animal.breed}, compatibilidade ${r.compatibility}/100)`).join(', ') +
         `. 1 frase direta recomendando o melhor.`;
     } else {
       const top3 = ranking.slice(0, 3);
       prompt =
         `Técnico rural, sertão nordestino. Fêmea ${animal.species} ${animal.breed}, ${currentWeight}kg. ` +
-        `Reprodutores rankeados: ${top3.map((r) => `${r.breeder.name} ${r.breeder.breed} (compatibilidade ${r.compatibility}/100)`).join(', ')}. ` +
+        `Reprodutores rankeados: ${top3.map((r) => `${r.animal.name} ${r.animal.breed} (compatibilidade ${r.compatibility}/100)`).join(', ')}. ` +
         `Recomende o melhor em 1-2 frases práticas.`;
     }
 
@@ -161,16 +161,16 @@ export class AiInsightsService {
     animal: Animal,
     currentWeight: number,
     score: ScoreOutput,
-    breeder: Breeder | null,
+    sire: Animal | null,
     dto: PredictPregnancyDto,
   ): string {
     const alertsText = score.alerts.length ? score.alerts.join('; ') : 'nenhum';
-    const breederText = breeder ? `${breeder.name} (score ${breeder.fertilityScore}/100)` : 'não informado';
+    const sireText = sire ? `${sire.name} (score ${sire.fertilityScore}/100)` : 'não informado';
     return (
       `Técnico rural, sertão nordestino. ` +
       `${animal.species} ${animal.breed}, ${currentWeight}kg, ${animal.pregnancyHistory} prenhezes anteriores, ` +
       `${animal.abortionCount} aborto(s), protocolo: ${dto.protocol ?? 'não informado'}, ` +
-      `reprodutor: ${breederText}. ` +
+      `reprodutor: ${sireText}. ` +
       `Resultado: ${score.pregnancyProbability}% de prenhez, risco ${score.riskLevel}. ` +
       `Alertas: ${alertsText}. ` +
       `Escreva 1-2 frases práticas e diretas.`
@@ -181,12 +181,12 @@ export class AiInsightsService {
     animal: Animal,
     currentWeight: number,
     score: ScoreOutput,
-    breeder: Breeder | null,
+    sire: Animal | null,
     dto: PredictPregnancyDto,
   ): string {
     const daysPostpartum = calcDaysPostpartum(animal.lastBirthDate);
-    const breederText = breeder
-      ? `${breeder.name}, raça ${breeder.breed}, score ${breeder.fertilityScore}/100 (${breeder.pregnancies} prenhezes em ${breeder.totalInseminations} inseminações)`
+    const sireText = sire
+      ? `${sire.name}, raça ${sire.breed}, score ${sire.fertilityScore}/100 (${sire.pregnanciesAsBreeder} prenhezes em ${sire.totalInseminations} inseminações)`
       : 'não informado';
 
     return (
@@ -196,7 +196,7 @@ export class AiInsightsService {
       `• Histórico: ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
       `${animal.reproductiveDiseaseHistory ? ', com histórico de doença reprodutiva' : ''}\n` +
       `• Pós-parto: ${daysPostpartum > 0 ? daysPostpartum + ' dias' : 'sem parto anterior registrado'}\n` +
-      `• Protocolo: ${dto.protocol ?? 'não informado'} | Reprodutor: ${breederText}\n` +
+      `• Protocolo: ${dto.protocol ?? 'não informado'} | Reprodutor: ${sireText}\n` +
       `• Condições: Temperatura ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n\n` +
       `Resultado do modelo de scoring:\n` +
       `• Probabilidade de prenhez: ${score.pregnancyProbability}% | Risco: ${score.riskLevel}\n` +

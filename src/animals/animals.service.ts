@@ -115,7 +115,7 @@ export class AnimalsService {
         dam: { select: { id: true, name: true, identifier: true } },
         weighings: { orderBy: { weighingDate: 'desc' } },
         reproductiveEvents: {
-          include: { breeder: { select: { id: true, name: true } } },
+          include: { sireAnimal: { select: { id: true, name: true, identifier: true } } },
           orderBy: { eventDate: 'desc' },
         },
         predictions: { orderBy: { createdAt: 'desc' }, take: 5 },

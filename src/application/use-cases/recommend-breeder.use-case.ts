@@ -22,27 +22,27 @@ export class RecommendBreederUseCase {
     if (!animal) throw new NotFoundException('Animal not found');
     if (animal.sex !== AnimalSex.female) throw new BadRequestException('Breeder recommendation only applies to females');
 
-    const breeders = await this.prisma.breeder.findMany({
-      where: { farmId, species: animal.species, active: true },
+    const males = await this.prisma.animal.findMany({
+      where: { farmId, species: animal.species, sex: AnimalSex.male, active: true },
       orderBy: { fertilityScore: 'desc' },
     });
-    if (!breeders.length) throw new NotFoundException('No active breeders found for this species');
+    if (!males.length) throw new NotFoundException('No active male animals found for this species');
 
     const currentWeight = animal.weighings[0]?.weightKg ?? 0;
 
-    const ranking = breeders
-      .map((b) => {
-        let compatibility = b.fertilityScore;
-        if (b.breed.toLowerCase() !== animal.breed.toLowerCase()) compatibility = Math.min(100, compatibility + 5);
-        if (b.totalInseminations >= 10) compatibility = Math.min(100, compatibility + 3);
-        if (b.fertilityScore < 60) compatibility = Math.max(0, compatibility - 10);
+    const ranking = males
+      .map((m) => {
+        let compatibility = m.fertilityScore > 0 ? m.fertilityScore : 50;
+        if (m.breed.toLowerCase() !== animal.breed.toLowerCase()) compatibility = Math.min(100, compatibility + 5);
+        if (m.totalInseminations >= 10) compatibility = Math.min(100, compatibility + 3);
+        if (m.fertilityScore > 0 && m.fertilityScore < 60) compatibility = Math.max(0, compatibility - 10);
 
         const classification =
-          compatibility >= 85 ? 'Excellent' :
-          compatibility >= 70 ? 'Very Good' :
-          compatibility >= 55 ? 'Good' : 'Fair';
+          compatibility >= 85 ? 'Excelente' :
+          compatibility >= 70 ? 'Muito Bom' :
+          compatibility >= 55 ? 'Bom' : 'Regular';
 
-        return { breeder: b, compatibility, classification };
+        return { animal: m, compatibility, classification };
       })
       .sort((a, b) => b.compatibility - a.compatibility)
       .slice(0, 5);
@@ -56,10 +56,10 @@ export class RecommendBreederUseCase {
     if (!profile.callsAi) {
       const best = ranking[0];
       aiInsight =
-        `Reprodutor recomendado: ${best.breeder.name} (${best.breeder.breed}, compatibilidade ${best.compatibility}/100). ` +
-        `${ranking.length > 1 ? `Alternativa: ${ranking[1].breeder.name} (${ranking[1].compatibility}/100).` : ''}`;
+        `Reprodutor recomendado: ${best.animal.name} (${best.animal.breed}, compatibilidade ${best.compatibility}/100). ` +
+        `${ranking.length > 1 ? `Alternativa: ${ranking[1].animal.name} (${ranking[1].compatibility}/100).` : ''}`;
     } else {
-      const result = await this.insights.generateForBreeder(animal, currentWeight, ranking, profile);
+      const result = await this.insights.generateForRecommendBreeder(animal, currentWeight, ranking, profile);
       aiInsight = result.text;
       inputTokens = result.tokens.input;
       outputTokens = result.tokens.output;
@@ -68,15 +68,19 @@ export class RecommendBreederUseCase {
     await this.prisma.prediction.create({
       data: {
         animalId,
-        breederId: ranking[0].breeder.id,
+        sireId: ranking[0].animal.id,
         analysisType: 'best_breeder',
         pregnancyProbability: ranking[0].compatibility,
-        fertilityScore: ranking[0].breeder.fertilityScore,
+        fertilityScore: ranking[0].animal.fertilityScore,
         riskLevel: ranking[0].compatibility >= 70 ? 'low' : ranking[0].compatibility >= 50 ? 'moderate' : 'high',
         geneticCompatibility: ranking[0].compatibility,
-        positiveFactors: ranking.slice(0, 3).map((r) => `${r.breeder.name} (${r.classification}, score ${r.compatibility})`),
-        alerts: ranking.filter((r) => r.breeder.fertilityScore < 60).map((r) => `${r.breeder.name} with below-ideal fertility`),
-        recommendations: ranking.map((r, i) => `${i + 1}. ${r.breeder.name} — ${r.breeder.breed} | compatibility ${r.compatibility}/100 | ${r.classification}`),
+        positiveFactors: ranking.slice(0, 3).map((r) => `${r.animal.name} (${r.classification}, score ${r.compatibility})`),
+        alerts: ranking
+          .filter((r) => r.animal.fertilityScore > 0 && r.animal.fertilityScore < 60)
+          .map((r) => `${r.animal.name} com fertilidade abaixo do ideal`),
+        recommendations: ranking.map(
+          (r, i) => `${i + 1}. ${r.animal.name} — ${r.animal.breed} | compatibilidade ${r.compatibility}/100 | ${r.classification}`,
+        ),
         aiInsight,
         aiProfile: profile.id as AiProfileId,
         inputTokens,
@@ -95,15 +99,16 @@ export class RecommendBreederUseCase {
       },
       ranking: ranking.map((item, i) => ({
         position: i + 1,
-        breeder: {
-          id: item.breeder.id,
-          name: item.breeder.name,
-          breed: item.breeder.breed,
-          fertilityScore: item.breeder.fertilityScore,
-          totalInseminations: item.breeder.totalInseminations,
-          pregnancies: item.breeder.pregnancies,
-          actualPregnancyRate: item.breeder.totalInseminations > 0
-            ? Math.round((item.breeder.pregnancies / item.breeder.totalInseminations) * 100)
+        sire: {
+          id: item.animal.id,
+          identifier: item.animal.identifier,
+          name: item.animal.name,
+          breed: item.animal.breed,
+          fertilityScore: item.animal.fertilityScore,
+          totalInseminations: item.animal.totalInseminations,
+          pregnanciesAsBreeder: item.animal.pregnanciesAsBreeder,
+          actualPregnancyRate: item.animal.totalInseminations > 0
+            ? Math.round((item.animal.pregnanciesAsBreeder / item.animal.totalInseminations) * 100)
             : null,
         },
         compatibility: item.compatibility,

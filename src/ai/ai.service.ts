@@ -191,7 +191,7 @@ export class AiService {
       where: { animalId },
       orderBy: { createdAt: 'desc' },
       include: {
-        breeder: { select: { id: true, name: true, breed: true, fertilityScore: true } },
+        sireAnimal: { select: { id: true, identifier: true, name: true, breed: true, fertilityScore: true } },
       },
     });
   }
@@ -207,7 +207,7 @@ export class AiService {
         take: limit,
         include: {
           animal: { select: { id: true, name: true, identifier: true, species: true, breed: true } },
-          breeder: { select: { id: true, name: true, breed: true, fertilityScore: true } },
+          sireAnimal: { select: { id: true, identifier: true, name: true, breed: true, fertilityScore: true } },
         },
       }),
       this.prisma.prediction.count({ where }),

@@ -73,16 +73,16 @@ export class ScoringService {
     }
 
     // 8. Score do reprodutor
-    if (input.breeder) {
-      if (input.breeder.fertilityScore >= 80) {
+    if (input.sire) {
+      if (input.sire.fertilityScore >= 80) {
         score += 10;
-        positiveFactors.push(`Reprodutor com alta fertilidade (score ${input.breeder.fertilityScore})`);
-      } else if (input.breeder.fertilityScore >= 60) {
+        positiveFactors.push(`Reprodutor com alta fertilidade (score ${input.sire.fertilityScore})`);
+      } else if (input.sire.fertilityScore >= 60) {
         score += 5;
-        positiveFactors.push(`Reprodutor com fertilidade razoável (score ${input.breeder.fertilityScore})`);
-      } else {
-        alerts.push(`Reprodutor com fertilidade abaixo do ideal (score ${input.breeder.fertilityScore})`);
-        recommendations.push('Considerar troca de reprodutor');
+        positiveFactors.push(`Reprodutor com fertilidade razoável (score ${input.sire.fertilityScore})`);
+      } else if (input.sire.fertilityScore > 0) {
+        alerts.push(`Reprodutor com fertilidade abaixo do ideal (score ${input.sire.fertilityScore})`);
+        recommendations.push('Considerar outro reprodutor');
       }
     }
 
@@ -126,8 +126,8 @@ export class ScoringService {
     }
 
     const pregnancyProbability = Math.round(35 + score * 0.6);
-    const geneticCompatibility = input.breeder
-      ? Math.min(100, input.breeder.fertilityScore + 5)
+    const geneticCompatibility = input.sire
+      ? Math.min(100, input.sire.fertilityScore + 5)
       : null;
 
     return {

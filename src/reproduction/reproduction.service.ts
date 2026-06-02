@@ -5,11 +5,10 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { CreateInseminationDto } from './dto/create-insemination.dto';
 import { UpdateDiagnosisDto } from './dto/update-diagnosis.dto';
 import { paginate } from '../common/dto/pagination.dto';
-import { BreedersService } from '../breeders/breeders.service';
 
 @Injectable()
 export class ReproductionService {
-  constructor(private prisma: PrismaService, private breedersService: BreedersService) {}
+  constructor(private prisma: PrismaService) {}
 
   async createEvent(dto: CreateEventDto, farmId: string) {
     const animal = await this.prisma.animal.findUnique({ where: { id: dto.animalId } });
@@ -19,7 +18,7 @@ export class ReproductionService {
     const event = await this.prisma.reproductiveEvent.create({
       data: {
         animalId: dto.animalId,
-        breederId: dto.breederId,
+        sireId: dto.sireId,
         eventType: dto.eventType,
         inseminator: dto.inseminator,
         semenUsed: dto.semenUsed,
@@ -29,7 +28,10 @@ export class ReproductionService {
         notes: dto.notes,
         pregnancyDiagnosis: 'pending',
       },
-      include: { animal: { select: { id: true, name: true, identifier: true } }, breeder: true },
+      include: {
+        animal: { select: { id: true, name: true, identifier: true } },
+        sireAnimal: { select: { id: true, name: true, identifier: true } },
+      },
     });
 
     const statusMap: Record<string, string> = {
@@ -54,6 +56,14 @@ export class ReproductionService {
       await this.prisma.animal.update({ where: { id: dto.animalId }, data: animalUpdate });
     }
 
+    // Track insemination count on sire animal
+    if (dto.sireId && ['artificial_insemination', 'natural_mating', 'controlled_mating'].includes(dto.eventType)) {
+      await this.prisma.animal.update({
+        where: { id: dto.sireId },
+        data: { totalInseminations: { increment: 1 } },
+      });
+    }
+
     return event;
   }
 
@@ -61,7 +71,7 @@ export class ReproductionService {
     return this.createEvent(
       {
         animalId: dto.animalId,
-        breederId: dto.breederId,
+        sireId: dto.sireId,
         eventType: 'artificial_insemination',
         inseminator: dto.inseminator,
         semenUsed: dto.semenUsed,
@@ -89,7 +99,7 @@ export class ReproductionService {
       ...(filters.search && {
         OR: [
           { inseminator: { contains: filters.search, mode: 'insensitive' as const } },
-          { breeder: { name: { contains: filters.search, mode: 'insensitive' as const } } },
+          { sireAnimal: { name: { contains: filters.search, mode: 'insensitive' as const } } },
         ],
       }),
       ...(filters.pregnancyDiagnosis && { pregnancyDiagnosis: filters.pregnancyDiagnosis }),
@@ -107,7 +117,7 @@ export class ReproductionService {
         where,
         include: {
           animal: { select: { id: true, name: true, identifier: true, species: true } },
-          breeder: { select: { id: true, name: true } },
+          sireAnimal: { select: { id: true, name: true, identifier: true, breed: true, fertilityScore: true } },
           prediction: { select: { pregnancyProbability: true, riskLevel: true } },
         },
         orderBy: { eventDate: 'desc' },
@@ -127,7 +137,10 @@ export class ReproductionService {
 
     return this.prisma.reproductiveEvent.findMany({
       where: { animalId },
-      include: { breeder: { select: { id: true, name: true } }, prediction: true },
+      include: {
+        sireAnimal: { select: { id: true, name: true, identifier: true } },
+        prediction: true,
+      },
       orderBy: { eventDate: 'desc' },
     });
   }
@@ -154,15 +167,33 @@ export class ReproductionService {
         where: { id: event.animalId },
         data: { pregnancyHistory: { increment: 1 }, reproductiveStatus: 'Pregnant' },
       });
-      if (event.breederId) await this.breedersService.recordInseminationResult(event.breederId, true);
+      if (event.sireId) await this.updateSireFertility(event.sireId, true);
     } else if (['negative', 'conception_failure'].includes(dto.pregnancyDiagnosis)) {
       await this.prisma.animal.update({
         where: { id: event.animalId },
         data: { reproductiveStatus: 'Ready' },
       });
-      if (event.breederId) await this.breedersService.recordInseminationResult(event.breederId, false);
+      if (event.sireId) await this.updateSireFertility(event.sireId, false);
     }
 
     return updatedEvent;
+  }
+
+  private async updateSireFertility(sireId: string, pregnant: boolean) {
+    const sire = await this.prisma.animal.update({
+      where: { id: sireId },
+      data: pregnant
+        ? { pregnanciesAsBreeder: { increment: 1 } }
+        : {},
+    });
+
+    const score = sire.totalInseminations > 0
+      ? Math.round((sire.pregnanciesAsBreeder / sire.totalInseminations) * 100)
+      : 0;
+
+    await this.prisma.animal.update({
+      where: { id: sireId },
+      data: { fertilityScore: score },
+    });
   }
 }
