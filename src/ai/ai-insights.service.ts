@@ -193,7 +193,7 @@ export class AiInsightsService {
       `REGRA: cite valores específicos dos dados acima — não escreva nada que valeria para qualquer animal.\n\n` +
       `Em 2 frases diretas:\n` +
       `(1) Dos dados acima, quais dois fatores são mais determinantes para o resultado desta inseminação? Justifique com os valores.\n` +
-      `(2) A probabilidade de ${score.pregnancyProbability}% parece coerente com o perfil clínico, subestimada ou superestimada? Por quê?`
+      `(2) O que este perfil específico tem que um número não captura — algo que um veterinário presente notaria neste animal?`
     );
   }
 
@@ -225,7 +225,7 @@ export class AiInsightsService {
       `Não escreva orientações que valeriam para qualquer fêmea.\n\n` +
       `Parecer em 3-4 frases respondendo:\n` +
       `(1) O que nos dados clínicos mais favorece ou mais preocupa este caso — cite o valor que sustenta sua afirmação.\n` +
-      `(2) A probabilidade de ${score.pregnancyProbability}% é coerente com o perfil, subestimada ou superestimada? O que o modelo pode não estar capturando neste caso específico?\n` +
+      `(2) O que este perfil específico tem que um score numérico não captura — algo que um veterinário presente notaria neste animal além dos números?\n` +
       `(3) Recomendação concreta de manejo para esta raça/espécie nesta estação no semiárido — algo além do protocolo padrão.\n` +
       `Linguagem técnica, acessível ao produtor rural.`
     );
