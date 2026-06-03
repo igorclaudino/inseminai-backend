@@ -92,7 +92,37 @@ export class MembersService {
       return { message: `Account created and invitation accepted for ${dto.email}`, accountCreated: true };
     }
 
-    // ── Usuário COM conta: envia link de convite normalmente ──────────────────
+    // ── Usuário COM conta + mustChangePassword: reconecta diretamente (re-convite) ─
+    if (existingUser.mustChangePassword) {
+      const name = existingUser.name;
+      const tempPassword = this.generateTempPassword();
+      const hashed = await bcrypt.hash(tempPassword, 10);
+
+      await this.prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existingUser.id },
+          data: { password: hashed, mustChangePassword: true },
+        });
+        await tx.farmMember.create({
+          data: { farmId, userId: existingUser.id, role: dto.role },
+        });
+        await tx.farmInvitation.create({
+          data: { email: dto.email, role: dto.role, farmId, invitedById: requesterId, expiresAt, status: 'accepted' },
+        });
+      });
+
+      await this.mail.sendInvitationWithTempPassword({
+        toEmail: dto.email,
+        name,
+        tempPassword,
+        farmName: farm!.name,
+        role: dto.role,
+      });
+
+      return { message: `Member re-invited and access restored for ${dto.email}`, accountCreated: false };
+    }
+
+    // ── Usuário COM conta ativa: envia link de convite normalmente ─────────────
     const invitation = await this.prisma.farmInvitation.create({
       data: { email: dto.email, role: dto.role, farmId, invitedById: requesterId, expiresAt },
     });

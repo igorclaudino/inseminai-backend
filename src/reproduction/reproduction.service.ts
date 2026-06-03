@@ -125,7 +125,7 @@ export class ReproductionService {
           sireAnimal: { select: { id: true, name: true, identifier: true, breed: true, fertilityScore: true } },
           prediction: { select: { pregnancyProbability: true, riskLevel: true } },
         },
-        orderBy: { eventDate: 'desc' },
+        orderBy: [{ eventDate: 'desc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -146,7 +146,7 @@ export class ReproductionService {
         sireAnimal: { select: { id: true, name: true, identifier: true } },
         prediction: true,
       },
-      orderBy: { eventDate: 'desc' },
+      orderBy: [{ eventDate: 'desc' }, { createdAt: 'desc' }],
     });
   }
 
