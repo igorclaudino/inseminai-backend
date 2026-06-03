@@ -42,10 +42,11 @@ export class DashboardService {
           ...(startDate ? { updatedAt: { lt: startDate } } : {}),
         },
       }),
-      // Inseminações com sucesso no período
+      // Inseminações com sucesso — apenas eventos de inseminação (exclui evento 'pregnancy' automático)
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
+          eventType: { in: ['artificial_insemination', 'natural_mating', 'controlled_mating'] },
           pregnancyDiagnosis: 'positive',
           ...(dateFilter ? { eventDate: dateFilter } : {}),
         },
@@ -53,14 +54,16 @@ export class DashboardService {
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
+          eventType: { in: ['artificial_insemination', 'natural_mating', 'controlled_mating'] },
           pregnancyDiagnosis: 'positive',
           ...(startDate ? { eventDate: { lt: startDate } } : {}),
         },
       }),
-      // Inseminações sem sucesso no período
+      // Inseminações sem sucesso
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
+          eventType: { in: ['artificial_insemination', 'natural_mating', 'controlled_mating'] },
           pregnancyDiagnosis: { in: ['negative', 'conception_failure'] },
           ...(dateFilter ? { eventDate: dateFilter } : {}),
         },
@@ -68,6 +71,7 @@ export class DashboardService {
       this.prisma.reproductiveEvent.count({
         where: {
           animal: { farmId, ...speciesFilter },
+          eventType: { in: ['artificial_insemination', 'natural_mating', 'controlled_mating'] },
           pregnancyDiagnosis: { in: ['negative', 'conception_failure'] },
           ...(startDate ? { eventDate: { lt: startDate } } : {}),
         },
