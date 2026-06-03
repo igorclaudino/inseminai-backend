@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateFarmDto } from './dto/create-farm.dto';
+import { UpdateFarmDto } from './dto/update-farm.dto';
+import { AiProfileId } from '@prisma/client';
 
 @Injectable()
 export class FarmsService {
@@ -43,7 +45,14 @@ export class FarmsService {
     return { ...farm, myRole: memberRole };
   }
 
-  async update(farmId: string, dto: Partial<CreateFarmDto>) {
-    return this.prisma.farm.update({ where: { id: farmId }, data: dto });
+  async update(farmId: string, dto: UpdateFarmDto) {
+    const { aiProfile, ...rest } = dto;
+    return this.prisma.farm.update({
+      where: { id: farmId },
+      data: {
+        ...rest,
+        ...(aiProfile && { aiProfile: aiProfile as AiProfileId }),
+      },
+    });
   }
 }

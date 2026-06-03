@@ -2,6 +2,7 @@ import { Controller, Get, Post, Put, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { FarmsService } from './farms.service';
 import { CreateFarmDto } from './dto/create-farm.dto';
+import { UpdateFarmDto } from './dto/update-farm.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { FarmGuard } from '../common/guards/farm.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -39,7 +40,7 @@ export class FarmsController {
   @UseGuards(FarmGuard)
   @RequireAdmin()
   @ApiOperation({ summary: 'Update farm (admin only)' })
-  update(@FarmId() farmId: string, @Body() dto: Partial<CreateFarmDto>) {
+  update(@FarmId() farmId: string, @Body() dto: UpdateFarmDto) {
     return this.farmsService.update(farmId, dto);
   }
 }
