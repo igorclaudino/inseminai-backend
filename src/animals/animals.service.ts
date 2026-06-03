@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Species, AnimalSex } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAnimalDto } from './dto/create-animal.dto';
@@ -152,6 +152,17 @@ export class AnimalsService {
 
     const { initialWeight, initialWeighingDate, ...animalData } = dto;
 
+    if (animalData.sireId) {
+      if (animalData.sireId === id) throw new BadRequestException('An animal cannot be its own sire');
+      if (await this.isAncestorOf(id, animalData.sireId))
+        throw new BadRequestException('Circular parentage: this animal already appears in the ancestry of the proposed sire');
+    }
+    if (animalData.damId) {
+      if (animalData.damId === id) throw new BadRequestException('An animal cannot be its own dam');
+      if (await this.isAncestorOf(id, animalData.damId))
+        throw new BadRequestException('Circular parentage: this animal already appears in the ancestry of the proposed dam');
+    }
+
     return this.prisma.animal.update({
       where: { id },
       data: {
@@ -172,5 +183,28 @@ export class AnimalsService {
       where: { id },
       data: { active: false, deletedAt: new Date(), deletionReason: dto.deletionReason },
     });
+  }
+
+  private async isAncestorOf(potentialAncestorId: string, targetId: string): Promise<boolean> {
+    const visited = new Set<string>();
+    const queue = [targetId];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      if (visited.has(currentId)) continue;
+      visited.add(currentId);
+
+      const current = await this.prisma.animal.findUnique({
+        where: { id: currentId },
+        select: { sireId: true, damId: true },
+      });
+      if (!current) continue;
+
+      if (current.sireId === potentialAncestorId || current.damId === potentialAncestorId) return true;
+      if (current.sireId) queue.push(current.sireId);
+      if (current.damId) queue.push(current.damId);
+    }
+
+    return false;
   }
 }
