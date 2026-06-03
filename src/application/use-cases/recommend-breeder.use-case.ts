@@ -59,7 +59,7 @@ export class RecommendBreederUseCase {
     let outputTokens = 0;
 
     if (profile.callsAi) {
-      const aiResult = await this.insights.recommendBreederWithAI(animal, currentWeight, males);
+      const aiResult = await this.insights.recommendBreederWithAI(animal, currentWeight, males, profile);
       if (aiResult) {
         // Re-ordenar ranking com scores da IA, mantendo dados do animal
         const maleMap = new Map(males.map((m) => [m.id, m]));

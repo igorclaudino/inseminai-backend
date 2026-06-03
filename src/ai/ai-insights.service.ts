@@ -59,6 +59,7 @@ export class AiInsightsService {
     currentWeight: number,
     sire: Animal | null,
     dto: PredictPregnancyDto,
+    profile: AiProfileConfig,
   ): Promise<AIPredictionResult | null> {
     if (!this.openai) return null;
 
@@ -66,6 +67,16 @@ export class AiInsightsService {
     const sireText = sire
       ? `${sire.name}, raça ${sire.breed} (${sire.pregnanciesAsBreeder} prenhezes confirmadas em ${sire.totalInseminations} inseminações)`
       : 'não informado';
+
+    const insightInstruction =
+      profile.id === 'brief'
+        ? `"aiInsight": "<1 frase citando um dado específico deste animal e o que ele implica para esta inseminação>"`
+        : profile.id === 'expert'
+          ? `"aiInsight": "<4-5 frases técnicas: analise cada fator determinante com os valores reais, ressalvas clínicas e recomendação de manejo específica para esta raça no semiárido>"`
+          : `"aiInsight": "<2-3 frases técnicas citando dados específicos deste animal — sem orientações genéricas>"`;
+
+    const factorsCount = profile.id === 'brief' ? 2 : profile.id === 'expert' ? 5 : 4;
+    const maxTokens = profile.id === 'brief' ? 400 : profile.id === 'expert' ? 900 : 600;
 
     const prompt =
       `Você é veterinário especialista em reprodução animal no semiárido nordestino brasileiro.\n` +
@@ -87,10 +98,10 @@ export class AiInsightsService {
       `  "fertilityScore": <inteiro 0-100 — aptidão reprodutiva geral>,\n` +
       `  "riskLevel": <"low" se prob>=70, "moderate" se 55-69, "high" se <55>,\n` +
       `  "geneticCompatibility": <inteiro 0-100 ou null se reprodutor não informado>,\n` +
-      `  "positiveFactors": [<até 4 fatores favoráveis em português>],\n` +
-      `  "alerts": [<até 4 achados preocupantes em português>],\n` +
-      `  "recommendations": [<até 3 ações concretas em português>],\n` +
-      `  "aiInsight": "<2-3 frases técnicas citando dados específicos deste animal — sem orientações genéricas>"\n` +
+      `  "positiveFactors": [<até ${factorsCount} fatores favoráveis em português>],\n` +
+      `  "alerts": [<até ${factorsCount} achados preocupantes em português>],\n` +
+      `  "recommendations": [<até ${profile.id === 'expert' ? 5 : 3} ações concretas em português>],\n` +
+      `  ${insightInstruction}\n` +
       `}`;
 
     const start = Date.now();
@@ -99,8 +110,8 @@ export class AiInsightsService {
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-        max_tokens: 700,
-        temperature: 0.3,
+        max_tokens: maxTokens,
+        temperature: profile.temperature,
       });
 
       const raw = response.choices[0]?.message?.content;
@@ -144,6 +155,7 @@ export class AiInsightsService {
     female: Animal,
     currentWeight: number,
     males: Animal[],
+    profile: AiProfileConfig,
   ): Promise<AIBreederRecommendationResult | null> {
     if (!this.openai) return null;
 
@@ -152,6 +164,16 @@ export class AiInsightsService {
       `${i + 1}. ID:${m.id} | ${m.name} — ${m.breed} | ` +
       `${m.pregnanciesAsBreeder} prenhezes confirmadas em ${m.totalInseminations} inseminações`,
     ).join('\n');
+
+    const insightInstruction =
+      profile.id === 'brief'
+        ? `"aiInsight": "<1 frase: qual reprodutor escolheria para esta fêmea e por quê — cite o dado que justifica>"`
+        : profile.id === 'expert'
+          ? `"aiInsight": "<4-5 frases: analise a compatibilidade de raça, histórico real de cada reprodutor, ressalvas clínicas da fêmea e manejo pós-cobertura específico para esta espécie no semiárido>"`
+          : `"aiInsight": "<2-3 frases técnicas citando dados reais dos reprodutores e da fêmea>"`;
+
+    const factorsCount = profile.id === 'brief' ? 2 : profile.id === 'expert' ? 5 : 3;
+    const maxTokens = profile.id === 'brief' ? 400 : profile.id === 'expert' ? 900 : 600;
 
     const prompt =
       `Você é veterinário especialista em reprodução animal no semiárido nordestino.\n\n` +
@@ -167,10 +189,10 @@ export class AiInsightsService {
       `Retorne EXATAMENTE este JSON (sem markdown):\n` +
       `{\n` +
       `  "ranking": [{ "sireId": "<ID exato do item acima>", "compatibility": <0-100>, "classification": <"Excelente"|"Muito Bom"|"Bom"|"Regular"> }],\n` +
-      `  "positiveFactors": [<até 3 fatores favoráveis em português>],\n` +
-      `  "alerts": [<até 3 alertas em português>],\n` +
-      `  "recommendations": [<até 3 recomendações em português>],\n` +
-      `  "aiInsight": "<2-3 frases técnicas citando dados reais dos reprodutores e da fêmea>"\n` +
+      `  "positiveFactors": [<até ${factorsCount} fatores favoráveis em português>],\n` +
+      `  "alerts": [<até ${factorsCount} alertas em português>],\n` +
+      `  "recommendations": [<até ${profile.id === 'expert' ? 5 : 3} recomendações em português>],\n` +
+      `  ${insightInstruction}\n` +
       `}`;
 
     const start = Date.now();
@@ -179,8 +201,8 @@ export class AiInsightsService {
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-        max_tokens: 600,
-        temperature: 0.3,
+        max_tokens: maxTokens,
+        temperature: profile.temperature,
       });
 
       const raw = response.choices[0]?.message?.content;
@@ -216,6 +238,7 @@ export class AiInsightsService {
   async bestDamWithAI(
     candidates: Array<{ animal: Animal & { farm: any }; currentWeight: number }>,
     dto: { protocol?: string; ambientTemperature?: number; season?: string },
+    profile: AiProfileConfig,
   ): Promise<AIBestDamResult | null> {
     if (!this.openai) return null;
 
@@ -230,6 +253,17 @@ export class AiInsightsService {
       );
     }).join('\n');
 
+    const insightInstruction =
+      profile.id === 'brief'
+        ? `"aiInsight": "<1 frase: qual candidata tem o perfil mais sólido — cite o dado que justifica>"`
+        : profile.id === 'expert'
+          ? `"aiInsight": "<4-5 frases: compare os perfis clínicos reais, destaque riscos individuais e recomende manejo pré/pós-inseminação específico para esta espécie no semiárido>"`
+          : `"aiInsight": "<2-3 frases citando dados específicos das melhores candidatas>"`;
+
+    const factorsCount = profile.id === 'brief' ? 2 : profile.id === 'expert' ? 5 : 3;
+    const baseTokens = profile.id === 'brief' ? 300 : profile.id === 'expert' ? 500 : 400;
+    const maxTokens = Math.min(baseTokens + candidates.length * 80, profile.id === 'expert' ? 1500 : 1000);
+
     const prompt =
       `Você é veterinário especialista em reprodução animal no semiárido nordestino.\n\n` +
       `Contexto: protocolo ${dto.protocol ?? 'não informado'}` +
@@ -239,9 +273,9 @@ export class AiInsightsService {
       `REGRA: cada score deve ser justificável pelos dados clínicos. Não use orientações genéricas.\n\n` +
       `Retorne EXATAMENTE este JSON (sem markdown):\n` +
       `{\n` +
-      `  "ranking": [{ "animalId": "<ID exato>", "pregnancyProbability": <35-95>, "fertilityScore": <0-100>, "riskLevel": <"low"|"moderate"|"high">, "positiveFactors": [<até 3>], "alerts": [<até 3>] }],\n` +
-      `  "recommendations": [<até 3 recomendações gerais para o lote>],\n` +
-      `  "aiInsight": "<2-3 frases citando dados específicos das melhores candidatas>"\n` +
+      `  "ranking": [{ "animalId": "<ID exato>", "pregnancyProbability": <35-95>, "fertilityScore": <0-100>, "riskLevel": <"low"|"moderate"|"high">, "positiveFactors": [<até ${factorsCount}>], "alerts": [<até ${factorsCount}>] }],\n` +
+      `  "recommendations": [<até ${profile.id === 'expert' ? 5 : 3} recomendações para o lote>],\n` +
+      `  ${insightInstruction}\n` +
       `}`;
 
     const start = Date.now();
@@ -250,8 +284,8 @@ export class AiInsightsService {
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
         response_format: { type: 'json_object' },
-        max_tokens: Math.min(200 + candidates.length * 80, 1200),
-        temperature: 0.3,
+        max_tokens: maxTokens,
+        temperature: profile.temperature,
       });
 
       const raw = response.choices[0]?.message?.content;

@@ -77,7 +77,7 @@ export class BestDamUseCase {
     let outputTokens = 0;
 
     if (profile.callsAi) {
-      const aiResult = await this.insights.bestDamWithAI(topAnimals, dto);
+      const aiResult = await this.insights.bestDamWithAI(topAnimals, dto, profile);
       if (aiResult) {
         const aiMap = new Map(aiResult.ranking.map((r) => [r.animalId, r]));
         const updated = topAnimals.map((p) => {

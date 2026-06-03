@@ -67,7 +67,7 @@ export class PredictPregnancyUseCase {
     let outputTokens = 0;
 
     if (profile.callsAi) {
-      const aiResult = await this.insights.predictWithAI(animal, currentWeight, sire, dto);
+      const aiResult = await this.insights.predictWithAI(animal, currentWeight, sire, dto, profile);
       if (aiResult) {
         score = aiResult.score;
         aiInsight = aiResult.insight;
