@@ -83,9 +83,11 @@ export class AiInsightsService {
           `${i + 1}. ${r.animal.name} — ${r.animal.breed} | ` +
           `${r.animal.pregnanciesAsBreeder} prenhezes confirmadas em ${r.animal.totalInseminations} inseminações`,
         ).join('\n') + '\n\n' +
-        `Em 3-4 frases técnicas: (1) qual reprodutor você indicaria para essa fêmea e por quê — considerando histórico real de prenhezes, ` +
-        `complementaridade de raça e adaptação ao semiárido, (2) alguma ressalva sobre a fêmea que pode influenciar o resultado, ` +
-        `(3) cuidado específico de manejo após a inseminação neste contexto.`;
+        `REGRA: cada afirmação deve citar dados reais dos reprodutores ou da fêmea — sem generalidades.\n\n` +
+        `Em 3-4 frases técnicas:\n` +
+        `(1) Qual reprodutor indicaria e por quê — cite o histórico real de prenhezes e a complementaridade de raça.\n` +
+        `(2) Alguma ressalva sobre a fêmea (ECC ${animal.bodyConditionScore}/5, ${animal.abortionCount} aborto(s), ${daysPostpartum > 0 ? `${daysPostpartum} dias pós-parto` : 'sem parto anterior'}) que pode influenciar o resultado independente do reprodutor?\n` +
+        `(3) Cuidado concreto de manejo após a inseminação para esta espécie no semiárido.`;
     } else if (profile.id === 'brief') {
       const top2 = ranking.slice(0, 2);
       prompt =
@@ -132,21 +134,23 @@ export class AiInsightsService {
           `${p.animal.pregnancyHistory} prenhezes anteriores | ${p.animal.abortionCount} aborto(s) | ` +
           `Status atual: ${p.animal.reproductiveStatus} | Score modelo: ${p.result.pregnancyProbability}%`
         ).join('\n') + '\n\n' +
-        `Em 3-4 frases técnicas: (1) olhando para os dados clínicos — não apenas para o score — qual animal apresenta o perfil mais sólido e por quê, ` +
-        `(2) algum dado chama atenção negativamente (histórico de abortos, baixo ECC, status) e exige cuidado extra, ` +
-        `(3) recomendações de manejo pré e pós-inseminação considerando a estação e o clima do semiárido.`;
+        `REGRA OBRIGATÓRIA: cada frase deve citar ao menos um valor específico dos dados acima — não escreva nada que valeria para qualquer rebanho.\n\n` +
+        `Parecer em 3-4 frases:\n` +
+        `(1) Comparando os dados clínicos reais (ECC, histórico de abortos, pós-parto, peso) — não o score — qual animal tem o perfil mais sólido e qual apresenta maior risco? Cite os valores.\n` +
+        `(2) Algum dado se destaca negativamente e exige uma ação antes de inseminar? Seja específico.\n` +
+        `(3) Recomendação concreta de manejo pré ou pós-inseminação para esta espécie nesta estação no semiárido.`;
     } else if (profile.id === 'brief') {
       prompt =
         `Rebanho semiárido${dto.ambientTemperature ? `, ${dto.ambientTemperature}°C` : ''}. ` +
-        `Candidatas para inseminação: ` +
-        top3.map((p) => `${p.animal.name} (${p.animal.species} ${p.animal.breed}, ${p.currentWeight}kg, ECC ${p.animal.bodyConditionScore}/5, ${p.animal.pregnancyHistory} prenhezes)`).join('; ') +
-        `. 1 frase: qual priorizar e por quê.`;
+        `Candidatas: ` +
+        top3.map((p) => `${p.animal.name} (${p.animal.species} ${p.animal.breed}, ${p.currentWeight}kg, ECC ${p.animal.bodyConditionScore}/5, ${p.animal.pregnancyHistory} prenhezes, ${p.animal.abortionCount} abortos)`).join('; ') +
+        `.\n\nREGRA: cite dados reais. 1 frase: qual tem o perfil mais sólido e por que os dados justificam essa escolha.`;
     } else {
       prompt =
         `Técnico rural, sertão nordestino${dto.ambientTemperature ? `, ${dto.ambientTemperature}°C` : ''}. ` +
-        `Melhores fêmeas para inseminar: ` +
+        `Candidatas para inseminação: ` +
         top3.map((p) => `${p.animal.name} ${p.animal.species} ${p.animal.breed} (${p.currentWeight}kg, ECC ${p.animal.bodyConditionScore}/5, ${p.animal.pregnancyHistory} prenhezes, ${p.animal.abortionCount} abortos)`).join('; ') +
-        `. Em 1-2 frases: qual priorizar, e algum cuidado específico de manejo para esta época.`;
+        `.\n\nREGRA: cite valores específicos. Em 1-2 frases: qual priorizar com base nos dados reais, e um cuidado concreto de manejo para esta época.`;
     }
 
     return this.callOpenAI(prompt, profile, () => fallback);
@@ -160,8 +164,9 @@ export class AiInsightsService {
       `${animal.species} ${animal.breed}, ${currentWeight}kg, ECC ${animal.bodyConditionScore}/5, ` +
       `${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s), ` +
       `${daysPostpartum > 0 ? `${daysPostpartum} dias pós-parto` : 'sem parto anterior'}. ` +
-      `Probabilidade de prenhez calculada: ${score.pregnancyProbability}%. ` +
-      `Em 1 frase curta e direta: o que o produtor deve observar ou fazer neste animal hoje.`
+      `Probabilidade calculada: ${score.pregnancyProbability}%.\n\n` +
+      `Em 1 frase: cite um dado específico deste animal acima (ECC, dias pós-parto, histórico de abortos, peso, raça) ` +
+      `e diga o que ele implica concretamente para esta inseminação. Não escreva orientação genérica.`
     );
   }
 
@@ -183,10 +188,12 @@ export class AiInsightsService {
       `${animal.reproductiveDiseaseHistory ? ', histórico de doença reprodutiva' : ''}\n` +
       `Pós-parto: ${daysPostpartum > 0 ? `${daysPostpartum} dias` : 'sem parto anterior'}\n` +
       `Protocolo: ${dto.protocol ?? 'não informado'} | Reprodutor: ${sireText}\n` +
-      `Temperatura ambiente: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n` +
-      `Probabilidade de prenhez calculada: ${score.pregnancyProbability}%\n\n` +
-      `Em 1-2 frases práticas: (1) o que verificar neste animal nas próximas 48h, ` +
-      `(2) existe algum sinal clínico que justificaria postergar a inseminação?`
+      `Temperatura: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n` +
+      `Probabilidade calculada: ${score.pregnancyProbability}%\n\n` +
+      `REGRA: cite valores específicos dos dados acima — não escreva nada que valeria para qualquer animal.\n\n` +
+      `Em 2 frases diretas:\n` +
+      `(1) Dos dados acima, quais dois fatores são mais determinantes para o resultado desta inseminação? Justifique com os valores.\n` +
+      `(2) A probabilidade de ${score.pregnancyProbability}% parece coerente com o perfil clínico, subestimada ou superestimada? Por quê?`
     );
   }
 
@@ -204,22 +211,23 @@ export class AiInsightsService {
 
     return (
       `Você é veterinário especialista em reprodução animal no semiárido nordestino brasileiro.\n\n` +
-      `Dados clínicos do animal:\n` +
+      `Dados clínicos:\n` +
       `• Espécie/Raça: ${animal.species} ${animal.breed}\n` +
       `• Peso: ${currentWeight} kg | ECC: ${animal.bodyConditionScore}/5\n` +
-      `• Histórico reprodutivo: ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
+      `• Histórico: ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
       `${animal.reproductiveDiseaseHistory ? ', histórico de doença reprodutiva' : ''}\n` +
-      `• Dias pós-parto: ${daysPostpartum > 0 ? daysPostpartum : 'sem parto anterior registrado'}\n` +
-      `• Status reprodutivo atual: ${animal.reproductiveStatus}\n` +
+      `• Pós-parto: ${daysPostpartum > 0 ? `${daysPostpartum} dias` : 'sem parto anterior registrado'}\n` +
+      `• Status atual: ${animal.reproductiveStatus}\n` +
       `• Protocolo: ${dto.protocol ?? 'não informado'} | Reprodutor: ${sireText}\n` +
-      `• Temperatura ambiente: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n\n` +
-      `O modelo preditivo calculou ${score.pregnancyProbability}% de probabilidade de prenhez (risco ${score.riskLevel}).\n\n` +
-      `Elabore um parecer técnico em 3-4 frases abordando:\n` +
-      `(1) sua avaliação clínica independente — o que os dados sugerem além do score numérico,\n` +
-      `(2) manejo específico recomendado para essa raça nesta estação no semiárido,\n` +
-      `(3) sinais de alarme que justificariam postergar a inseminação,\n` +
-      `(4) ação prioritária nas próximas 48h.\n` +
-      `Linguagem técnica, acessível ao produtor rural, sem repetir os números que ele já vê na tela.`
+      `• Temperatura: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n` +
+      `• Probabilidade calculada pelo modelo: ${score.pregnancyProbability}% (risco ${score.riskLevel})\n\n` +
+      `REGRA OBRIGATÓRIA: cada frase deve citar ao menos um valor específico dos dados acima. ` +
+      `Não escreva orientações que valeriam para qualquer fêmea.\n\n` +
+      `Parecer em 3-4 frases respondendo:\n` +
+      `(1) O que nos dados clínicos mais favorece ou mais preocupa este caso — cite o valor que sustenta sua afirmação.\n` +
+      `(2) A probabilidade de ${score.pregnancyProbability}% é coerente com o perfil, subestimada ou superestimada? O que o modelo pode não estar capturando neste caso específico?\n` +
+      `(3) Recomendação concreta de manejo para esta raça/espécie nesta estação no semiárido — algo além do protocolo padrão.\n` +
+      `Linguagem técnica, acessível ao produtor rural.`
     );
   }
 
