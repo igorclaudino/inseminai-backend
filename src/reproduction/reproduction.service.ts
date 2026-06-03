@@ -17,10 +17,12 @@ export class ReproductionService {
     if (!animal) throw new NotFoundException('Animal not found');
     if (animal.farmId !== farmId) throw new NotFoundException('Animal not found');
 
+    const sireId = dto.sireId ?? dto.breederId;
+
     const event = await this.prisma.reproductiveEvent.create({
       data: {
         animalId: dto.animalId,
-        sireId: dto.sireId,
+        sireId,
         eventType: dto.eventType,
         inseminator: dto.inseminator,
         semenUsed: dto.semenUsed,
@@ -59,9 +61,9 @@ export class ReproductionService {
     }
 
     // Track insemination count on sire animal
-    if (dto.sireId && ['artificial_insemination', 'natural_mating', 'controlled_mating'].includes(dto.eventType)) {
+    if (sireId && ['artificial_insemination', 'natural_mating', 'controlled_mating'].includes(dto.eventType)) {
       await this.prisma.animal.update({
-        where: { id: dto.sireId },
+        where: { id: sireId },
         data: { totalInseminations: { increment: 1 } },
       });
     }

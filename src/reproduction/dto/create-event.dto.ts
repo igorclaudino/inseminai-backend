@@ -21,6 +21,12 @@ export class CreateEventDto {
   @Transform(({ value }) => value || undefined)
   sireId?: string;
 
+  /** @deprecated usar sireId — mantido para compatibilidade com frontend */
+  @IsOptional()
+  @IsUUID()
+  @Transform(({ value }) => value || undefined)
+  breederId?: string;
+
   @ApiProperty({ example: 'artificial_insemination', enum: EVENT_TYPES })
   @IsIn(EVENT_TYPES)
   eventType: string;
