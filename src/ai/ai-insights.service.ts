@@ -70,30 +70,35 @@ export class AiInsightsService {
     let prompt: string;
     if (profile.id === 'expert') {
       const top3 = ranking.slice(0, 3);
+      const daysPostpartum = calcDaysPostpartum(animal.lastBirthDate);
       prompt =
         `Você é veterinário especialista em reprodução animal no semiárido nordestino.\n\n` +
-        `Fêmea para inseminação: ${animal.species} ${animal.breed}, ${currentWeight}kg, ECC ${animal.bodyConditionScore}/5, ` +
-        `${animal.pregnancyHistory} prenhezes anteriores, ${animal.abortionCount} aborto(s).\n\n` +
-        `Reprodutores disponíveis (por compatibilidade):\n` +
+        `Fêmea para inseminação:\n` +
+        `• ${animal.species} ${animal.breed} | ${currentWeight}kg | ECC ${animal.bodyConditionScore}/5\n` +
+        `• ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
+        `${animal.reproductiveDiseaseHistory ? ', histórico de doença reprodutiva' : ''}\n` +
+        `• Pós-parto: ${daysPostpartum > 0 ? `${daysPostpartum} dias` : 'sem parto anterior'}\n\n` +
+        `Reprodutores disponíveis:\n` +
         top3.map((r, i) =>
-          `${i + 1}. ${r.animal.name} — ${r.animal.breed} | Score fertilidade: ${r.animal.fertilityScore}/100 | ` +
-          `Compatibilidade calculada: ${r.compatibility}/100 | ` +
-          `Histórico: ${r.animal.pregnanciesAsBreeder} prenhezes em ${r.animal.totalInseminations} inseminações | ${r.classification}`,
+          `${i + 1}. ${r.animal.name} — ${r.animal.breed} | ` +
+          `${r.animal.pregnanciesAsBreeder} prenhezes confirmadas em ${r.animal.totalInseminations} inseminações`,
         ).join('\n') + '\n\n' +
-        `Em 3-4 frases técnicas: (1) justifique a recomendação do 1º colocado, (2) compare com a alternativa, ` +
-        `(3) mencione critérios genéticos e de adaptação ao semiárido nordestino.`;
+        `Em 3-4 frases técnicas: (1) qual reprodutor você indicaria para essa fêmea e por quê — considerando histórico real de prenhezes, ` +
+        `complementaridade de raça e adaptação ao semiárido, (2) alguma ressalva sobre a fêmea que pode influenciar o resultado, ` +
+        `(3) cuidado específico de manejo após a inseminação neste contexto.`;
     } else if (profile.id === 'brief') {
       const top2 = ranking.slice(0, 2);
       prompt =
-        `${animal.species} ${animal.breed} fêmea. Reprodutores: ` +
-        top2.map((r) => `${r.animal.name} (${r.animal.breed}, compatibilidade ${r.compatibility}/100)`).join(', ') +
-        `. 1 frase direta recomendando o melhor.`;
+        `${animal.species} ${animal.breed}, ${currentWeight}kg, ECC ${animal.bodyConditionScore}/5. ` +
+        `Reprodutores: ` +
+        top2.map((r) => `${r.animal.name} (${r.animal.breed}, ${r.animal.pregnanciesAsBreeder}/${r.animal.totalInseminations} prenhezes)`).join(' vs ') +
+        `. 1 frase direta: qual você escolheria para essa fêmea e por quê.`;
     } else {
       const top3 = ranking.slice(0, 3);
       prompt =
-        `Técnico rural, sertão nordestino. Fêmea ${animal.species} ${animal.breed}, ${currentWeight}kg. ` +
-        `Reprodutores rankeados: ${top3.map((r) => `${r.animal.name} ${r.animal.breed} (compatibilidade ${r.compatibility}/100)`).join(', ')}. ` +
-        `Recomende o melhor em 1-2 frases práticas.`;
+        `Técnico rural, sertão nordestino. Fêmea ${animal.species} ${animal.breed}, ${currentWeight}kg, ECC ${animal.bodyConditionScore}/5. ` +
+        `Reprodutores disponíveis: ${top3.map((r) => `${r.animal.name} (${r.animal.breed}, ${r.animal.pregnanciesAsBreeder} prenhezes em ${r.animal.totalInseminations} inseminações)`).join('; ')}. ` +
+        `Em 1-2 frases práticas: qual indicaria e o que observar após a cobertura.`;
     }
 
     return this.callOpenAI(prompt, profile, () => fallback);
@@ -116,30 +121,32 @@ export class AiInsightsService {
     if (profile.id === 'expert') {
       prompt =
         `Você é veterinário especialista em reprodução animal no semiárido nordestino.\n\n` +
-        `Análise de rebanho — Fazenda ${farm.name}` +
+        `Contexto do rebanho — Fazenda ${farm.name}` +
         `${dto.species ? ` | Espécie: ${dto.species}` : ''}` +
-        `${dto.protocol ? ` | Protocolo: ${dto.protocol}` : ''}` +
-        `${dto.ambientTemperature ? ` | Temperatura: ${dto.ambientTemperature}°C` : ''}` +
+        `${dto.protocol ? ` | Protocolo planejado: ${dto.protocol}` : ''}` +
+        `${dto.ambientTemperature ? ` | Temperatura ambiente: ${dto.ambientTemperature}°C` : ''}` +
         `${dto.season ? ` | Estação: ${dto.season}` : ''}\n\n` +
-        `Top ${top3.length} matrizes para inseminação agora:\n` +
+        `Melhores candidatas para inseminação agora:\n` +
         top3.map((p, i) =>
           `${i + 1}. ${p.animal.name} — ${p.animal.species} ${p.animal.breed} | ${p.currentWeight}kg | ECC ${p.animal.bodyConditionScore}/5 | ` +
-          `${p.animal.pregnancyHistory} prenhezes | ${p.animal.abortionCount} abortos | ` +
-          `Status: ${p.animal.reproductiveStatus} | Probabilidade: ${p.result.pregnancyProbability}% | Risco: ${p.result.riskLevel}`
+          `${p.animal.pregnancyHistory} prenhezes anteriores | ${p.animal.abortionCount} aborto(s) | ` +
+          `Status atual: ${p.animal.reproductiveStatus} | Score modelo: ${p.result.pregnancyProbability}%`
         ).join('\n') + '\n\n' +
-        `Em 3-4 frases técnicas: (1) por que essas fêmeas são as melhores candidatas agora, ` +
-        `(2) padrões comuns de condição entre elas, (3) recomendações de prioridade e manejo para o técnico no semiárido.`;
+        `Em 3-4 frases técnicas: (1) olhando para os dados clínicos — não apenas para o score — qual animal apresenta o perfil mais sólido e por quê, ` +
+        `(2) algum dado chama atenção negativamente (histórico de abortos, baixo ECC, status) e exige cuidado extra, ` +
+        `(3) recomendações de manejo pré e pós-inseminação considerando a estação e o clima do semiárido.`;
     } else if (profile.id === 'brief') {
       prompt =
-        `Rebanho semiárido. Top 3 fêmeas para inseminação: ` +
-        top3.map((p) => `${p.animal.name} (${p.animal.species}, ${p.result.pregnancyProbability}%)`).join(', ') +
-        `. 1 frase de orientação prática.`;
+        `Rebanho semiárido${dto.ambientTemperature ? `, ${dto.ambientTemperature}°C` : ''}. ` +
+        `Candidatas para inseminação: ` +
+        top3.map((p) => `${p.animal.name} (${p.animal.species} ${p.animal.breed}, ${p.currentWeight}kg, ECC ${p.animal.bodyConditionScore}/5, ${p.animal.pregnancyHistory} prenhezes)`).join('; ') +
+        `. 1 frase: qual priorizar e por quê.`;
     } else {
       prompt =
-        `Técnico rural, sertão nordestino. Melhores fêmeas para inseminar agora: ` +
-        top3.map((p) => `${p.animal.name} ${p.animal.species} ${p.animal.breed} (${p.result.pregnancyProbability}%, risco ${p.result.riskLevel})`).join('; ') +
-        `. Principais alertas: ${topAnimals.flatMap((p) => p.result.alerts).slice(0, 3).join('; ') || 'nenhum'}. ` +
-        `Oriente em 1-2 frases o técnico sobre prioridade e cuidados.`;
+        `Técnico rural, sertão nordestino${dto.ambientTemperature ? `, ${dto.ambientTemperature}°C` : ''}. ` +
+        `Melhores fêmeas para inseminar: ` +
+        top3.map((p) => `${p.animal.name} ${p.animal.species} ${p.animal.breed} (${p.currentWeight}kg, ECC ${p.animal.bodyConditionScore}/5, ${p.animal.pregnancyHistory} prenhezes, ${p.animal.abortionCount} abortos)`).join('; ') +
+        `. Em 1-2 frases: qual priorizar, e algum cuidado específico de manejo para esta época.`;
     }
 
     return this.callOpenAI(prompt, profile, () => fallback);
@@ -148,12 +155,13 @@ export class AiInsightsService {
   // ─── Prompt builders ──────────────────────────────────────────────────────
 
   private buildBriefPrompt(animal: Animal, currentWeight: number, score: ScoreOutput): string {
-    const alert = score.alerts[0] ?? null;
+    const daysPostpartum = calcDaysPostpartum(animal.lastBirthDate);
     return (
-      `${animal.species} ${animal.breed}, ${currentWeight}kg. ` +
-      `Prenhez: ${score.pregnancyProbability}%, risco ${score.riskLevel}. ` +
-      `${alert ? `Alerta: ${alert}.` : 'Sem alertas.'} ` +
-      `1 frase prática e direta para o produtor.`
+      `${animal.species} ${animal.breed}, ${currentWeight}kg, ECC ${animal.bodyConditionScore}/5, ` +
+      `${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s), ` +
+      `${daysPostpartum > 0 ? `${daysPostpartum} dias pós-parto` : 'sem parto anterior'}. ` +
+      `Probabilidade de prenhez calculada: ${score.pregnancyProbability}%. ` +
+      `Em 1 frase curta e direta: o que o produtor deve observar ou fazer neste animal hoje.`
     );
   }
 
@@ -164,16 +172,21 @@ export class AiInsightsService {
     sire: Animal | null,
     dto: PredictPregnancyDto,
   ): string {
-    const alertsText = score.alerts.length ? score.alerts.join('; ') : 'nenhum';
-    const sireText = sire ? `${sire.name} (score ${sire.fertilityScore}/100)` : 'não informado';
+    const daysPostpartum = calcDaysPostpartum(animal.lastBirthDate);
+    const sireText = sire
+      ? `${sire.name} (${sire.breed}, ${sire.pregnanciesAsBreeder} prenhezes em ${sire.totalInseminations} inseminações)`
+      : 'não informado';
     return (
-      `Técnico rural, sertão nordestino. ` +
-      `${animal.species} ${animal.breed}, ${currentWeight}kg, ${animal.pregnancyHistory} prenhezes anteriores, ` +
-      `${animal.abortionCount} aborto(s), protocolo: ${dto.protocol ?? 'não informado'}, ` +
-      `reprodutor: ${sireText}. ` +
-      `Resultado: ${score.pregnancyProbability}% de prenhez, risco ${score.riskLevel}. ` +
-      `Alertas: ${alertsText}. ` +
-      `Escreva 1-2 frases práticas e diretas.`
+      `Você é técnico em reprodução animal no sertão nordestino.\n\n` +
+      `Animal: ${animal.species} ${animal.breed} | ${currentWeight}kg | ECC ${animal.bodyConditionScore}/5\n` +
+      `Histórico: ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
+      `${animal.reproductiveDiseaseHistory ? ', histórico de doença reprodutiva' : ''}\n` +
+      `Pós-parto: ${daysPostpartum > 0 ? `${daysPostpartum} dias` : 'sem parto anterior'}\n` +
+      `Protocolo: ${dto.protocol ?? 'não informado'} | Reprodutor: ${sireText}\n` +
+      `Temperatura ambiente: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n` +
+      `Probabilidade de prenhez calculada: ${score.pregnancyProbability}%\n\n` +
+      `Em 1-2 frases práticas: (1) o que verificar neste animal nas próximas 48h, ` +
+      `(2) existe algum sinal clínico que justificaria postergar a inseminação?`
     );
   }
 
@@ -186,28 +199,27 @@ export class AiInsightsService {
   ): string {
     const daysPostpartum = calcDaysPostpartum(animal.lastBirthDate);
     const sireText = sire
-      ? `${sire.name}, raça ${sire.breed}, score ${sire.fertilityScore}/100 (${sire.pregnanciesAsBreeder} prenhezes em ${sire.totalInseminations} inseminações)`
+      ? `${sire.name}, raça ${sire.breed} (${sire.pregnanciesAsBreeder} prenhezes confirmadas em ${sire.totalInseminations} inseminações)`
       : 'não informado';
 
     return (
       `Você é veterinário especialista em reprodução animal no semiárido nordestino brasileiro.\n\n` +
-      `Caso para análise:\n` +
-      `• Animal: ${animal.species} ${animal.breed} | Peso: ${currentWeight} kg | ECC: ${animal.bodyConditionScore}/5\n` +
-      `• Histórico: ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
-      `${animal.reproductiveDiseaseHistory ? ', com histórico de doença reprodutiva' : ''}\n` +
-      `• Pós-parto: ${daysPostpartum > 0 ? daysPostpartum + ' dias' : 'sem parto anterior registrado'}\n` +
+      `Dados clínicos do animal:\n` +
+      `• Espécie/Raça: ${animal.species} ${animal.breed}\n` +
+      `• Peso: ${currentWeight} kg | ECC: ${animal.bodyConditionScore}/5\n` +
+      `• Histórico reprodutivo: ${animal.pregnancyHistory} prenhezes, ${animal.abortionCount} aborto(s)` +
+      `${animal.reproductiveDiseaseHistory ? ', histórico de doença reprodutiva' : ''}\n` +
+      `• Dias pós-parto: ${daysPostpartum > 0 ? daysPostpartum : 'sem parto anterior registrado'}\n` +
+      `• Status reprodutivo atual: ${animal.reproductiveStatus}\n` +
       `• Protocolo: ${dto.protocol ?? 'não informado'} | Reprodutor: ${sireText}\n` +
-      `• Condições: Temperatura ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n\n` +
-      `Resultado do modelo de scoring:\n` +
-      `• Probabilidade de prenhez: ${score.pregnancyProbability}% | Risco: ${score.riskLevel}\n` +
-      `• Score zootécnico: ${score.fertilityScore}/100\n` +
-      `• Fatores favoráveis: ${score.positiveFactors.join('; ') || 'nenhum'}\n` +
-      `• Alertas: ${score.alerts.join('; ') || 'nenhum'}\n\n` +
-      `Elabore um laudo técnico em 3-4 frases abordando: ` +
-      `(1) avaliação geral do animal, ` +
-      `(2) principais riscos ou pontos favoráveis para a inseminação, ` +
-      `(3) recomendações práticas de manejo específicas para o semiárido nordestino. ` +
-      `Linguagem técnica mas acessível ao produtor rural.`
+      `• Temperatura ambiente: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'} | Estação: ${dto.season ?? 'não informada'}\n\n` +
+      `O modelo preditivo calculou ${score.pregnancyProbability}% de probabilidade de prenhez (risco ${score.riskLevel}).\n\n` +
+      `Elabore um parecer técnico em 3-4 frases abordando:\n` +
+      `(1) sua avaliação clínica independente — o que os dados sugerem além do score numérico,\n` +
+      `(2) manejo específico recomendado para essa raça nesta estação no semiárido,\n` +
+      `(3) sinais de alarme que justificariam postergar a inseminação,\n` +
+      `(4) ação prioritária nas próximas 48h.\n` +
+      `Linguagem técnica, acessível ao produtor rural, sem repetir os números que ele já vê na tela.`
     );
   }
 
