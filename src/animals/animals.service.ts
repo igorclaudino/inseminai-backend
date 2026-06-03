@@ -114,7 +114,7 @@ export class AnimalsService {
         farm: true,
         sire: { select: { id: true, name: true, identifier: true } },
         dam: { select: { id: true, name: true, identifier: true } },
-        weighings: { orderBy: { weighingDate: 'desc' } },
+        weighings: { orderBy: [{ weighingDate: 'desc' }, { createdAt: 'desc' }] },
         reproductiveEvents: {
           include: { sireAnimal: { select: { id: true, name: true, identifier: true } } },
           orderBy: { eventDate: 'desc' },
