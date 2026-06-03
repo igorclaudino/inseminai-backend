@@ -49,38 +49,51 @@ export class RecommendBreederUseCase {
 
     const profile: AiProfileConfig = AI_PROFILES[farm.aiProfile] ?? AI_PROFILES.standard;
 
-    let aiInsight = '';
+    // Algoritmo como baseline e fallback
+    let finalRanking = ranking;
+    let positiveFactors = ranking.slice(0, 3).map((r) => `${r.animal.name} (${r.classification}, score ${r.compatibility})`);
+    let alerts = ranking.filter((r) => r.animal.fertilityScore > 0 && r.animal.fertilityScore < 60).map((r) => `${r.animal.name} com fertilidade abaixo do ideal`);
+    let recommendations = ranking.map((r, i) => `${i + 1}. ${r.animal.name} — ${r.animal.breed} | compatibilidade ${r.compatibility}/100 | ${r.classification}`);
+    let aiInsight = `Reprodutor recomendado: ${ranking[0].animal.name} (${ranking[0].animal.breed}, compatibilidade ${ranking[0].compatibility}/100).`;
     let inputTokens = 0;
     let outputTokens = 0;
 
-    if (!profile.callsAi) {
-      const best = ranking[0];
-      aiInsight =
-        `Reprodutor recomendado: ${best.animal.name} (${best.animal.breed}, compatibilidade ${best.compatibility}/100). ` +
-        `${ranking.length > 1 ? `Alternativa: ${ranking[1].animal.name} (${ranking[1].compatibility}/100).` : ''}`;
-    } else {
-      const result = await this.insights.generateForRecommendBreeder(animal, currentWeight, ranking, profile);
-      aiInsight = result.text;
-      inputTokens = result.tokens.input;
-      outputTokens = result.tokens.output;
+    if (profile.callsAi) {
+      const aiResult = await this.insights.recommendBreederWithAI(animal, currentWeight, males);
+      if (aiResult) {
+        // Re-ordenar ranking com scores da IA, mantendo dados do animal
+        const maleMap = new Map(males.map((m) => [m.id, m]));
+        const aiRanking = aiResult.ranking
+          .map((r) => {
+            const m = maleMap.get(r.sireId);
+            return m ? { animal: m, compatibility: r.compatibility, classification: r.classification } : null;
+          })
+          .filter(Boolean) as typeof ranking;
+
+        if (aiRanking.length > 0) finalRanking = aiRanking;
+        positiveFactors = aiResult.positiveFactors;
+        alerts = aiResult.alerts;
+        recommendations = aiResult.recommendations;
+        aiInsight = aiResult.aiInsight;
+        inputTokens = aiResult.tokens.input;
+        outputTokens = aiResult.tokens.output;
+      }
     }
+
+    const top = finalRanking[0];
 
     await this.prisma.prediction.create({
       data: {
         animalId,
-        sireId: ranking[0].animal.id,
+        sireId: top.animal.id,
         analysisType: 'best_breeder',
-        pregnancyProbability: ranking[0].compatibility,
-        fertilityScore: ranking[0].animal.fertilityScore,
-        riskLevel: ranking[0].compatibility >= 70 ? 'low' : ranking[0].compatibility >= 50 ? 'moderate' : 'high',
-        geneticCompatibility: ranking[0].compatibility,
-        positiveFactors: ranking.slice(0, 3).map((r) => `${r.animal.name} (${r.classification}, score ${r.compatibility})`),
-        alerts: ranking
-          .filter((r) => r.animal.fertilityScore > 0 && r.animal.fertilityScore < 60)
-          .map((r) => `${r.animal.name} com fertilidade abaixo do ideal`),
-        recommendations: ranking.map(
-          (r, i) => `${i + 1}. ${r.animal.name} — ${r.animal.breed} | compatibilidade ${r.compatibility}/100 | ${r.classification}`,
-        ),
+        pregnancyProbability: top.compatibility,
+        fertilityScore: top.animal.fertilityScore,
+        riskLevel: top.compatibility >= 70 ? 'low' : top.compatibility >= 50 ? 'moderate' : 'high',
+        geneticCompatibility: top.compatibility,
+        positiveFactors,
+        alerts,
+        recommendations,
         aiInsight,
         aiProfile: profile.id as AiProfileId,
         inputTokens,
@@ -97,7 +110,7 @@ export class RecommendBreederUseCase {
         currentWeight,
         bodyConditionScore: animal.bodyConditionScore,
       },
-      ranking: ranking.map((item, i) => ({
+      ranking: finalRanking.map((item, i) => ({
         position: i + 1,
         sire: {
           id: item.animal.id,

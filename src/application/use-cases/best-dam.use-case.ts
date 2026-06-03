@@ -65,23 +65,46 @@ export class BestDamUseCase {
 
     const profile: AiProfileConfig = AI_PROFILES[farm.aiProfile] ?? AI_PROFILES.standard;
 
-    let aiInsight = '';
+    // Algoritmo como baseline e fallback
+    let finalAnimals = topAnimals;
+    let recommendations = topAnimals.map(
+      (p, i) => `${i + 1}. ${p.animal.name} (${p.animal.species} ${p.animal.breed}) — ${p.result.pregnancyProbability}% | risco ${p.result.riskLevel}`,
+    );
+    let aiInsight =
+      `Melhores matrizes para inseminação: ` +
+      topAnimals.slice(0, 3).map((p, i) => `${i + 1}º ${p.animal.name} (${p.result.pregnancyProbability}%, risco ${p.result.riskLevel})`).join('; ') + '.';
     let inputTokens = 0;
     let outputTokens = 0;
 
-    if (!profile.callsAi) {
-      const top3 = topAnimals.slice(0, 3);
-      aiInsight =
-        `Melhores matrizes para inseminação agora: ` +
-        top3.map((p, i) => `${i + 1}º ${p.animal.name} (${p.result.pregnancyProbability}%, risco ${p.result.riskLevel})`).join('; ') + '.';
-    } else {
-      const result = await this.insights.generateForBestDam(topAnimals, farm, dto, profile);
-      aiInsight = result.text;
-      inputTokens = result.tokens.input;
-      outputTokens = result.tokens.output;
+    if (profile.callsAi) {
+      const aiResult = await this.insights.bestDamWithAI(topAnimals, dto);
+      if (aiResult) {
+        const aiMap = new Map(aiResult.ranking.map((r) => [r.animalId, r]));
+        const updated = topAnimals.map((p) => {
+          const ai = aiMap.get(p.animal.id);
+          if (!ai) return p;
+          return {
+            ...p,
+            result: {
+              ...p.result,
+              pregnancyProbability: ai.pregnancyProbability,
+              fertilityScore: ai.fertilityScore,
+              riskLevel: ai.riskLevel,
+              positiveFactors: ai.positiveFactors,
+              alerts: ai.alerts,
+            },
+          };
+        }).sort((a, b) => b.result.pregnancyProbability - a.result.pregnancyProbability);
+
+        finalAnimals = updated;
+        recommendations = aiResult.recommendations;
+        aiInsight = aiResult.aiInsight;
+        inputTokens = aiResult.tokens.input;
+        outputTokens = aiResult.tokens.output;
+      }
     }
 
-    const topAnimal = topAnimals[0];
+    const topAnimal = finalAnimals[0];
     await this.prisma.prediction.create({
       data: {
         animalId: topAnimal.animal.id,
@@ -92,9 +115,7 @@ export class BestDamUseCase {
         geneticCompatibility: null,
         positiveFactors: topAnimal.result.positiveFactors.slice(0, 3),
         alerts: topAnimal.result.alerts.slice(0, 3),
-        recommendations: topAnimals.map(
-          (p, i) => `${i + 1}. ${p.animal.name} (${p.animal.species} ${p.animal.breed}) — ${p.result.pregnancyProbability}% | risk ${p.result.riskLevel}`,
-        ),
+        recommendations,
         aiInsight,
         protocol: dto.protocol,
         ambientTemperature: dto.ambientTemperature ?? null,
@@ -108,13 +129,13 @@ export class BestDamUseCase {
     return {
       farm: { id: farm.id, name: farm.name },
       parameters: {
-        protocol: dto.protocol ?? 'FTAI',
+        protocol: dto.protocol ?? 'IATF',
         ambientTemperature: dto.ambientTemperature ?? null,
         season: dto.season ?? null,
         species: dto.species ?? 'all',
       },
       totalAnimalsEvaluated: females.length,
-      ranking: topAnimals.map((p, i) => ({
+      ranking: finalAnimals.map((p, i) => ({
         position: i + 1,
         animal: {
           id: p.animal.id,

@@ -18,6 +18,29 @@ export interface AIPredictionResult {
   tokens: { input: number; output: number };
 }
 
+export interface AIBreederRecommendationResult {
+  ranking: Array<{ sireId: string; compatibility: number; classification: string }>;
+  positiveFactors: string[];
+  alerts: string[];
+  recommendations: string[];
+  aiInsight: string;
+  tokens: { input: number; output: number };
+}
+
+export interface AIBestDamResult {
+  ranking: Array<{
+    animalId: string;
+    pregnancyProbability: number;
+    fertilityScore: number;
+    riskLevel: 'low' | 'moderate' | 'high';
+    positiveFactors: string[];
+    alerts: string[];
+  }>;
+  recommendations: string[];
+  aiInsight: string;
+  tokens: { input: number; output: number };
+}
+
 type AnimalWithFarm = Animal & { farm: Farm };
 
 @Injectable()
@@ -113,6 +136,151 @@ export class AiInsightsService {
       };
     } catch (err) {
       this.logger.error(`predictWithAI — fallback ao algoritmo — ${err instanceof Error ? err.message : err}`);
+      return null;
+    }
+  }
+
+  async recommendBreederWithAI(
+    female: Animal,
+    currentWeight: number,
+    males: Animal[],
+  ): Promise<AIBreederRecommendationResult | null> {
+    if (!this.openai) return null;
+
+    const daysPostpartum = calcDaysPostpartum(female.lastBirthDate);
+    const maleList = males.slice(0, 5).map((m, i) =>
+      `${i + 1}. ID:${m.id} | ${m.name} — ${m.breed} | ` +
+      `${m.pregnanciesAsBreeder} prenhezes confirmadas em ${m.totalInseminations} inseminações`,
+    ).join('\n');
+
+    const prompt =
+      `Você é veterinário especialista em reprodução animal no semiárido nordestino.\n\n` +
+      `Fêmea para inseminação:\n` +
+      `- Espécie/Raça: ${female.species} ${female.breed}\n` +
+      `- Peso: ${currentWeight}kg | ECC: ${female.bodyConditionScore}/5\n` +
+      `- Histórico: ${female.pregnancyHistory} prenhezes, ${female.abortionCount} aborto(s)` +
+      `${female.reproductiveDiseaseHistory ? ', histórico de doença reprodutiva' : ''}\n` +
+      `- Pós-parto: ${daysPostpartum > 0 ? `${daysPostpartum} dias` : 'sem parto anterior'}\n` +
+      `- Status: ${female.reproductiveStatus}\n\n` +
+      `Reprodutores disponíveis:\n${maleList}\n\n` +
+      `REGRA: justifique cada posição citando os dados reais de prenhezes e raça — sem generalidades.\n\n` +
+      `Retorne EXATAMENTE este JSON (sem markdown):\n` +
+      `{\n` +
+      `  "ranking": [{ "sireId": "<ID exato do item acima>", "compatibility": <0-100>, "classification": <"Excelente"|"Muito Bom"|"Bom"|"Regular"> }],\n` +
+      `  "positiveFactors": [<até 3 fatores favoráveis em português>],\n` +
+      `  "alerts": [<até 3 alertas em português>],\n` +
+      `  "recommendations": [<até 3 recomendações em português>],\n` +
+      `  "aiInsight": "<2-3 frases técnicas citando dados reais dos reprodutores e da fêmea>"\n` +
+      `}`;
+
+    const start = Date.now();
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        max_tokens: 600,
+        temperature: 0.3,
+      });
+
+      const raw = response.choices[0]?.message?.content;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+
+      if (!Array.isArray(parsed.ranking) || parsed.ranking.length === 0) return null;
+
+      const inputTokens = response.usage?.prompt_tokens ?? 0;
+      const outputTokens = response.usage?.completion_tokens ?? 0;
+      this.logger.log(`recommendBreederWithAI — ${inputTokens} in / ${outputTokens} out — ${Date.now() - start}ms`);
+
+      return {
+        ranking: parsed.ranking
+          .filter((r: any) => typeof r.sireId === 'string' && typeof r.compatibility === 'number')
+          .map((r: any) => ({
+            sireId: r.sireId,
+            compatibility: Math.max(0, Math.min(100, Math.round(r.compatibility))),
+            classification: ['Excelente', 'Muito Bom', 'Bom', 'Regular'].includes(r.classification) ? r.classification : 'Bom',
+          })),
+        positiveFactors: Array.isArray(parsed.positiveFactors) ? parsed.positiveFactors : [],
+        alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+        aiInsight: typeof parsed.aiInsight === 'string' ? parsed.aiInsight.trim() : '',
+        tokens: { input: inputTokens, output: outputTokens },
+      };
+    } catch (err) {
+      this.logger.error(`recommendBreederWithAI — fallback ao algoritmo — ${err instanceof Error ? err.message : err}`);
+      return null;
+    }
+  }
+
+  async bestDamWithAI(
+    candidates: Array<{ animal: Animal & { farm: any }; currentWeight: number }>,
+    dto: { protocol?: string; ambientTemperature?: number; season?: string },
+  ): Promise<AIBestDamResult | null> {
+    if (!this.openai) return null;
+
+    const candidateList = candidates.map((c, i) => {
+      const days = calcDaysPostpartum(c.animal.lastBirthDate);
+      return (
+        `${i + 1}. ID:${c.animal.id} | ${c.animal.name} — ${c.animal.species} ${c.animal.breed} | ` +
+        `${c.currentWeight}kg | ECC ${c.animal.bodyConditionScore}/5 | ` +
+        `${c.animal.pregnancyHistory} prenhezes | ${c.animal.abortionCount} aborto(s) | ` +
+        `${days > 0 ? `${days} dias pós-parto` : 'sem parto anterior'} | ` +
+        `Status: ${c.animal.reproductiveStatus}`
+      );
+    }).join('\n');
+
+    const prompt =
+      `Você é veterinário especialista em reprodução animal no semiárido nordestino.\n\n` +
+      `Contexto: protocolo ${dto.protocol ?? 'não informado'}` +
+      `${dto.ambientTemperature ? ` | temperatura ${dto.ambientTemperature}°C` : ''}` +
+      `${dto.season ? ` | estação ${dto.season}` : ''}\n\n` +
+      `Candidatas para inseminação:\n${candidateList}\n\n` +
+      `REGRA: cada score deve ser justificável pelos dados clínicos. Não use orientações genéricas.\n\n` +
+      `Retorne EXATAMENTE este JSON (sem markdown):\n` +
+      `{\n` +
+      `  "ranking": [{ "animalId": "<ID exato>", "pregnancyProbability": <35-95>, "fertilityScore": <0-100>, "riskLevel": <"low"|"moderate"|"high">, "positiveFactors": [<até 3>], "alerts": [<até 3>] }],\n` +
+      `  "recommendations": [<até 3 recomendações gerais para o lote>],\n` +
+      `  "aiInsight": "<2-3 frases citando dados específicos das melhores candidatas>"\n` +
+      `}`;
+
+    const start = Date.now();
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        max_tokens: Math.min(200 + candidates.length * 80, 1200),
+        temperature: 0.3,
+      });
+
+      const raw = response.choices[0]?.message?.content;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+
+      if (!Array.isArray(parsed.ranking) || parsed.ranking.length === 0) return null;
+
+      const inputTokens = response.usage?.prompt_tokens ?? 0;
+      const outputTokens = response.usage?.completion_tokens ?? 0;
+      this.logger.log(`bestDamWithAI — ${inputTokens} in / ${outputTokens} out — ${Date.now() - start}ms`);
+
+      return {
+        ranking: parsed.ranking
+          .filter((r: any) => typeof r.animalId === 'string' && typeof r.pregnancyProbability === 'number')
+          .map((r: any) => ({
+            animalId: r.animalId,
+            pregnancyProbability: Math.max(35, Math.min(95, Math.round(r.pregnancyProbability))),
+            fertilityScore: Math.max(0, Math.min(100, Math.round(r.fertilityScore ?? 50))),
+            riskLevel: (['low', 'moderate', 'high'].includes(r.riskLevel) ? r.riskLevel : 'moderate') as 'low' | 'moderate' | 'high',
+            positiveFactors: Array.isArray(r.positiveFactors) ? r.positiveFactors : [],
+            alerts: Array.isArray(r.alerts) ? r.alerts : [],
+          })),
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+        aiInsight: typeof parsed.aiInsight === 'string' ? parsed.aiInsight.trim() : '',
+        tokens: { input: inputTokens, output: outputTokens },
+      };
+    } catch (err) {
+      this.logger.error(`bestDamWithAI — fallback ao algoritmo — ${err instanceof Error ? err.message : err}`);
       return null;
     }
   }
