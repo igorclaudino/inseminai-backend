@@ -119,6 +119,10 @@ export class AnimalsService {
           include: { sireAnimal: { select: { id: true, name: true, identifier: true } } },
           orderBy: { eventDate: 'desc' },
         },
+        inseminationsAsSire: {
+          include: { animal: { select: { id: true, name: true, identifier: true, species: true } } },
+          orderBy: { eventDate: 'desc' },
+        },
         predictions: { orderBy: { createdAt: 'desc' }, take: 5 },
       },
     });
@@ -126,8 +130,15 @@ export class AnimalsService {
     if (!animal) throw new NotFoundException('Animal not found');
     if (animal.farmId !== farmId) throw new NotFoundException('Animal not found');
 
+    const { inseminationsAsSire, ...rest } = animal;
+    const reproductiveEvents = [
+      ...animal.reproductiveEvents,
+      ...inseminationsAsSire,
+    ].sort((a, b) => b.eventDate.getTime() - a.eventDate.getTime());
+
     return {
-      ...animal,
+      ...rest,
+      reproductiveEvents,
       daysPostpartum: calcDaysPostpartum(animal.lastBirthDate),
       currentWeight: animal.weighings[0]?.weightKg ?? null,
       age: calcAge(animal.birthDate),
