@@ -72,7 +72,7 @@ export class ReproductionService {
     return this.createEvent(
       {
         animalId: dto.animalId,
-        sireId: dto.sireId,
+        sireId: dto.sireId ?? dto.breederId,
         eventType: 'artificial_insemination',
         inseminator: dto.inseminator,
         semenUsed: dto.semenUsed,

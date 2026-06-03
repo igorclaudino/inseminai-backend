@@ -15,9 +15,16 @@ export class CreateInseminationDto {
     example: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
     description: 'ID do animal macho usado como reprodutor — obtido via GET /animals?sex=male',
   })
+  @IsOptional()
   @IsUUID()
   @Transform(({ value }) => value || undefined)
-  sireId: string;
+  sireId?: string;
+
+  /** @deprecated usar sireId — mantido para compatibilidade com frontend */
+  @IsOptional()
+  @IsUUID()
+  @Transform(({ value }) => value || undefined)
+  breederId?: string;
 
   @ApiProperty({ example: 'Dr. Fernando Lima', description: 'Nome do inseminador responsável' })
   @IsString()
