@@ -42,8 +42,10 @@ export class PredictPregnancyUseCase {
       : null;
 
     const currentWeight = animal.weighings[0]?.weightKg ?? 0;
+    const profile: AiProfileConfig = AI_PROFILES[animal.farm.aiProfile] ?? AI_PROFILES.standard;
 
-    const score = this.scoring.calculate({
+    // Algoritmo determinístico como baseline e fallback
+    let score = this.scoring.calculate({
       species: animal.species,
       lastBirthDate: animal.lastBirthDate,
       pregnancyHistory: animal.pregnancyHistory,
@@ -59,19 +61,18 @@ export class PredictPregnancyUseCase {
       season: dto.season,
     });
 
-    const profile: AiProfileConfig = AI_PROFILES[animal.farm.aiProfile] ?? AI_PROFILES.standard;
-
-    let aiInsight: string;
+    let aiInsight: string = this.insights.generateLocal(animal, currentWeight, score);
     let inputTokens = 0;
     let outputTokens = 0;
 
-    if (!profile.callsAi) {
-      aiInsight = this.insights.generateLocal(animal, currentWeight, score);
-    } else {
-      const result = await this.insights.generateForPrediction(animal, currentWeight, score, sire, dto, profile);
-      aiInsight = result.text;
-      inputTokens = result.tokens.input;
-      outputTokens = result.tokens.output;
+    if (profile.callsAi) {
+      const aiResult = await this.insights.predictWithAI(animal, currentWeight, sire, dto);
+      if (aiResult) {
+        score = aiResult.score;
+        aiInsight = aiResult.insight;
+        inputTokens = aiResult.tokens.input;
+        outputTokens = aiResult.tokens.output;
+      }
     }
 
     await this.prisma.prediction.create({

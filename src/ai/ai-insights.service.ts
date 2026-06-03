@@ -12,6 +12,12 @@ export interface InsightResult {
   tokens: { input: number; output: number };
 }
 
+export interface AIPredictionResult {
+  score: ScoreOutput;
+  insight: string;
+  tokens: { input: number; output: number };
+}
+
 type AnimalWithFarm = Animal & { farm: Farm };
 
 @Injectable()
@@ -22,6 +28,90 @@ export class AiInsightsService {
     this.openai = process.env.OPENAI_API_KEY
       ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
       : null;
+  }
+
+  async predictWithAI(
+    animal: Animal,
+    currentWeight: number,
+    sire: Animal | null,
+    dto: PredictPregnancyDto,
+  ): Promise<AIPredictionResult | null> {
+    if (!this.openai) return null;
+
+    const daysPostpartum = calcDaysPostpartum(animal.lastBirthDate);
+    const sireText = sire
+      ? `${sire.name}, raça ${sire.breed} (${sire.pregnanciesAsBreeder} prenhezes confirmadas em ${sire.totalInseminations} inseminações)`
+      : 'não informado';
+
+    const prompt =
+      `Você é veterinário especialista em reprodução animal no semiárido nordestino brasileiro.\n` +
+      `Analise os dados clínicos abaixo e retorne uma predição de prenhez em JSON.\n\n` +
+      `Dados clínicos:\n` +
+      `- Espécie: ${animal.species} | Raça: ${animal.breed}\n` +
+      `- Peso: ${currentWeight} kg | ECC: ${animal.bodyConditionScore}/5\n` +
+      `- Histórico: ${animal.pregnancyHistory} prenhezes anteriores, ${animal.abortionCount} aborto(s)\n` +
+      `${animal.reproductiveDiseaseHistory ? '- Histórico de doença reprodutiva: sim\n' : ''}` +
+      `- Dias pós-parto: ${daysPostpartum > 0 ? daysPostpartum : 'sem parto anterior registrado'}\n` +
+      `- Status reprodutivo: ${animal.reproductiveStatus}\n` +
+      `- Protocolo: ${dto.protocol ?? 'não informado'}\n` +
+      `- Reprodutor: ${sireText}\n` +
+      `- Temperatura ambiente: ${dto.ambientTemperature ? `${dto.ambientTemperature}°C` : 'não informada'}\n` +
+      `- Estação: ${dto.season ?? 'não informada'}\n\n` +
+      `Retorne EXATAMENTE este JSON (sem markdown):\n` +
+      `{\n` +
+      `  "pregnancyProbability": <inteiro 35-95>,\n` +
+      `  "fertilityScore": <inteiro 0-100 — aptidão reprodutiva geral>,\n` +
+      `  "riskLevel": <"low" se prob>=70, "moderate" se 55-69, "high" se <55>,\n` +
+      `  "geneticCompatibility": <inteiro 0-100 ou null se reprodutor não informado>,\n` +
+      `  "positiveFactors": [<até 4 fatores favoráveis em português>],\n` +
+      `  "alerts": [<até 4 achados preocupantes em português>],\n` +
+      `  "recommendations": [<até 3 ações concretas em português>],\n` +
+      `  "aiInsight": "<2-3 frases técnicas citando dados específicos deste animal — sem orientações genéricas>"\n` +
+      `}`;
+
+    try {
+      const response = await this.openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        max_tokens: 700,
+        temperature: 0.3,
+      });
+
+      const raw = response.choices[0]?.message?.content;
+      if (!raw) return null;
+
+      const parsed = JSON.parse(raw);
+
+      if (
+        typeof parsed.pregnancyProbability !== 'number' ||
+        typeof parsed.fertilityScore !== 'number' ||
+        !['low', 'moderate', 'high'].includes(parsed.riskLevel)
+      ) return null;
+
+      const score: ScoreOutput = {
+        pregnancyProbability: Math.max(35, Math.min(95, Math.round(parsed.pregnancyProbability))),
+        fertilityScore: Math.max(0, Math.min(100, Math.round(parsed.fertilityScore))),
+        riskLevel: parsed.riskLevel as 'low' | 'moderate' | 'high',
+        geneticCompatibility: typeof parsed.geneticCompatibility === 'number' ? parsed.geneticCompatibility : null,
+        positiveFactors: Array.isArray(parsed.positiveFactors) ? parsed.positiveFactors : [],
+        alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
+        recommendations: Array.isArray(parsed.recommendations) ? parsed.recommendations : [],
+        protocol: dto.protocol,
+      };
+
+      return {
+        score,
+        insight: typeof parsed.aiInsight === 'string' ? parsed.aiInsight.trim() : '',
+        tokens: {
+          input: response.usage?.prompt_tokens ?? 0,
+          output: response.usage?.completion_tokens ?? 0,
+        },
+      };
+    } catch (err) {
+      console.error('[AiInsights] predictWithAI error:', err instanceof Error ? err.message : err);
+      return null;
+    }
   }
 
   generateLocal(animal: Animal, currentWeight: number, score: ScoreOutput): string {
