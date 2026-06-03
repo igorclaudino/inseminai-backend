@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { Species } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateEventDto } from './dto/create-event.dto';
@@ -9,6 +9,7 @@ import { parseDateString } from '../common/helpers/parse-date';
 
 @Injectable()
 export class ReproductionService {
+  private readonly logger = new Logger(ReproductionService.name);
   constructor(private prisma: PrismaService) {}
 
   async createEvent(dto: CreateEventDto, farmId: string) {
@@ -69,6 +70,7 @@ export class ReproductionService {
   }
 
   async createInsemination(dto: CreateInseminationDto, farmId: string) {
+    this.logger.debug(`createInsemination DTO: ${JSON.stringify(dto)}`);
     return this.createEvent(
       {
         animalId: dto.animalId,
