@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import OpenAI from 'openai';
 import type { Animal, Farm } from '@prisma/client';
 import { AiProfileConfig } from './ai-profile.constants';
@@ -22,6 +22,7 @@ type AnimalWithFarm = Animal & { farm: Farm };
 
 @Injectable()
 export class AiInsightsService {
+  private readonly logger = new Logger(AiInsightsService.name);
   private openai: OpenAI | null;
 
   constructor() {
@@ -69,6 +70,7 @@ export class AiInsightsService {
       `  "aiInsight": "<2-3 frases técnicas citando dados específicos deste animal — sem orientações genéricas>"\n` +
       `}`;
 
+    const start = Date.now();
     try {
       const response = await this.openai.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -89,6 +91,10 @@ export class AiInsightsService {
         !['low', 'moderate', 'high'].includes(parsed.riskLevel)
       ) return null;
 
+      const inputTokens = response.usage?.prompt_tokens ?? 0;
+      const outputTokens = response.usage?.completion_tokens ?? 0;
+      this.logger.log(`predictWithAI — ${inputTokens} in / ${outputTokens} out — ${Date.now() - start}ms`);
+
       const score: ScoreOutput = {
         pregnancyProbability: Math.max(35, Math.min(95, Math.round(parsed.pregnancyProbability))),
         fertilityScore: Math.max(0, Math.min(100, Math.round(parsed.fertilityScore))),
@@ -103,13 +109,10 @@ export class AiInsightsService {
       return {
         score,
         insight: typeof parsed.aiInsight === 'string' ? parsed.aiInsight.trim() : '',
-        tokens: {
-          input: response.usage?.prompt_tokens ?? 0,
-          output: response.usage?.completion_tokens ?? 0,
-        },
+        tokens: { input: inputTokens, output: outputTokens },
       };
     } catch (err) {
-      console.error('[AiInsights] predictWithAI error:', err instanceof Error ? err.message : err);
+      this.logger.error(`predictWithAI — fallback ao algoritmo — ${err instanceof Error ? err.message : err}`);
       return null;
     }
   }
@@ -328,6 +331,7 @@ export class AiInsightsService {
     profile: AiProfileConfig,
     fallback: () => string,
   ): Promise<InsightResult> {
+    const start = Date.now();
     try {
       const response = await this.openai!.chat.completions.create({
         model: 'gpt-4o-mini',
@@ -335,15 +339,15 @@ export class AiInsightsService {
         max_tokens: profile.maxOutputTokens,
         temperature: profile.temperature,
       });
+      const inputTokens = response.usage?.prompt_tokens ?? 0;
+      const outputTokens = response.usage?.completion_tokens ?? 0;
+      this.logger.log(`insight [${profile.id}] — ${inputTokens} in / ${outputTokens} out — ${Date.now() - start}ms`);
       return {
         text: response.choices[0]?.message?.content?.trim() ?? '',
-        tokens: {
-          input: response.usage?.prompt_tokens ?? 0,
-          output: response.usage?.completion_tokens ?? 0,
-        },
+        tokens: { input: inputTokens, output: outputTokens },
       };
     } catch (err) {
-      console.error('[AiInsights] OpenAI error:', err instanceof Error ? err.message : err);
+      this.logger.error(`insight [${profile.id}] — fallback local — ${err instanceof Error ? err.message : err}`);
       return { text: fallback(), tokens: { input: 0, output: 0 } };
     }
   }

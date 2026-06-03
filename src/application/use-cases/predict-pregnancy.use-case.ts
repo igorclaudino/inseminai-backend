@@ -37,8 +37,9 @@ export class PredictPregnancyUseCase {
     if (!animal) throw new NotFoundException('Animal not found');
     if (animal.farmId !== farmId) throw new NotFoundException('Animal not found');
 
-    const sire = dto.sireId
-      ? await this.prisma.animal.findUnique({ where: { id: dto.sireId } })
+    const sireId = dto.sireId ?? dto.breederId;
+    const sire = sireId
+      ? await this.prisma.animal.findUnique({ where: { id: sireId } })
       : null;
 
     const currentWeight = animal.weighings[0]?.weightKg ?? 0;
@@ -93,7 +94,7 @@ export class PredictPregnancyUseCase {
         inputTokens,
         outputTokens,
         analysisType: 'pregnancy',
-        ...(dto.sireId && { sireId: dto.sireId }),
+        ...(sireId && { sireId }),
         ...(dto.reproductiveEventId && { reproductiveEventId: dto.reproductiveEventId }),
       },
     });

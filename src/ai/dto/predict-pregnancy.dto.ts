@@ -20,6 +20,12 @@ export class PredictPregnancyDto {
   @Transform(({ value }) => value || undefined)
   sireId?: string;
 
+  /** @deprecated usar sireId — mantido para compatibilidade com frontend */
+  @IsOptional()
+  @IsUUID()
+  @Transform(({ value }) => value || undefined)
+  breederId?: string;
+
   @ApiPropertyOptional({ example: 'IATF', enum: PROTOCOLS })
   @IsOptional()
   @IsIn(PROTOCOLS)
