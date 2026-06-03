@@ -53,7 +53,7 @@ export class AnimalsService {
         farmId,
         birthDate: animalData.birthDate ? parseDateString(animalData.birthDate) : undefined,
         weighings: initialWeight
-          ? { create: { weightKg: initialWeight, weighingDate: initialWeighingDate ? new Date(initialWeighingDate) : new Date() } }
+          ? { create: { weightKg: initialWeight, weighingDate: initialWeighingDate ? parseDateString(initialWeighingDate) : new Date() } }
           : undefined,
       },
       include: { weighings: { orderBy: { weighingDate: 'desc' }, take: 1 } },
