@@ -25,15 +25,15 @@
 ### UC-01 · Cadastro de novo usuário
 
 **Fluxo:**
-1. Frontend envia `POST /api/auth/registro` com `nome`, `email`, `senha`
+1. Frontend envia `POST /api/auth/register` com `nome`, `email`, `senha`
 2. Sistema verifica duplicidade de e-mail
 3. Senha é hasheada com bcrypt (salt 10)
 4. Usuário criado; JWT retornado imediatamente
 
 ```
-POST /api/auth/registro
+POST /api/auth/register
 { "nome": "João Silva", "email": "joao@fazenda.com", "senha": "minhaSenha123" }
-→ { "access_token": "eyJ..." }
+→ { "token": "eyJ..." }
 ```
 
 ### UC-02 · Login
@@ -46,7 +46,7 @@ POST /api/auth/registro
 ```
 POST /api/auth/login
 { "email": "joao@fazenda.com", "senha": "minhaSenha123" }
-→ { "access_token": "eyJ..." }
+→ { "token": "eyJ..." }
 ```
 
 **Proteção:** todas as rotas (exceto registro e login) exigem JWT válido via `JwtAuthGuard`.
@@ -60,7 +60,7 @@ POST /api/auth/login
 ### UC-03 · Criar fazenda
 
 ```
-POST /api/fazendas
+POST /api/farms
 { "nome": "Fazenda São João", "municipio": "Crateús", "estado": "CE" }
 → { "id": "uuid", "nome": "Fazenda São João", ... }
 ```
@@ -68,15 +68,15 @@ POST /api/fazendas
 ### UC-04 · Listar fazendas do usuário
 
 ```
-GET /api/fazendas
+GET /api/farms
 → [ { "id": "...", "nome": "...", "_count": { "animais": 10, "reprodutores": 3 } } ]
 ```
 
 ### UC-05 · Buscar / atualizar fazenda
 
 ```
-GET /api/fazendas/:id
-PUT /api/fazendas/:id  { "taxaMediaPrenhez": 68 }
+GET /api/farms/:id
+PUT /api/farms/:id  { "taxaMediaPrenhez": 68 }
 ```
 
 ---
@@ -101,14 +101,14 @@ Campos capturados no cadastro:
 | `pesoNascer`, `pesoDesmame` | Float? | Desempenho ponderal |
 
 ```
-POST /api/animais
+POST /api/animals
 → animal criado com contadores zerados (historicoPrenhez, quantidadeAbortos, etc.)
 ```
 
 ### UC-07 · Listar animais da fazenda (com filtros e paginação)
 
 ```
-GET /api/animais/fazenda/:fazendaId
+GET /api/animals/fazenda/:fazendaId
   ?especie=bovino
   &sexo=femea
   &statusReproducao=Apto
@@ -128,15 +128,15 @@ Retorna o perfil completo com:
 - Histórico completo de pesagens e eventos reprodutivos
 
 ```
-GET /api/animais/:id
+GET /api/animals/:id
 → { ...dados, "diasPosParto": 75, "pesoAtual": 445, "pesagens": [...], "eventosReprodutivos": [...] }
 ```
 
 ### UC-09 · Atualizar / Inativar animal
 
 ```
-PUT /api/animais/:id   { "scoreCondicaoCorporal": 4, "statusReproducao": "Apto" }
-DELETE /api/animais/:id  → soft delete (ativo: false), histórico preservado
+PUT /api/animals/:id   { "scoreCondicaoCorporal": 4, "statusReproducao": "Apto" }
+DELETE /api/animals/:id  → soft delete (ativo: false), histórico preservado
 ```
 
 ---
@@ -152,7 +152,7 @@ Reprodutor pode ser:
 - **Sêmen externo** (`animalId` nulo) — para palhetas adquiridas de terceiros
 
 ```
-POST /api/reprodutores
+POST /api/animals?sex=male
 { "especie": "bovino", "nome": "Imperador", "raca": "Nelore", "fazendaId": "uuid" }
 → { "id": "uuid", "scoreFertilidade": 85, "scoreEstimado": 85, ... }
 ```
@@ -160,10 +160,10 @@ POST /api/reprodutores
 ### UC-11 · Listar / buscar / atualizar / inativar reprodutor
 
 ```
-GET  /api/reprodutores/fazenda/:fazendaId  → apenas ativos, ordenados por score
-GET  /api/reprodutores/:id
-PUT  /api/reprodutores/:id
-DELETE /api/reprodutores/:id               → inativação (ativo: false)
+GET  /api/animals?sex=male/fazenda/:fazendaId  → apenas ativos, ordenados por score
+GET  /api/animals?sex=male/:id
+PUT  /api/animals?sex=male/:id
+DELETE /api/animals?sex=male/:id               → inativação (ativo: false)
 ```
 
 **Classificação automática:** `scoreFertilidade ≥ 80` = Excelente · `60–79` = Bom · `< 60` = Regular
@@ -189,7 +189,7 @@ DELETE /api/reprodutores/:id               → inativação (ativo: false)
 | `prenhez` | Confirmação de gestação |
 
 ```
-POST /api/reproducao/evento
+POST /api/reproduction/evento
 {
   "animalId": "uuid",
   "reprodutorId": "uuid",           // opcional
@@ -205,7 +205,7 @@ POST /api/reproducao/evento
 ### UC-13 · Atualizar diagnóstico de prenhez
 
 ```
-PATCH /api/reproducao/evento/:id/diagnostico
+PATCH /api/reproduction/evento/:id/diagnostico
 { "diagnosticoPrenhez": "positivo", "resultado": "Prenhe" }
 ```
 
@@ -215,14 +215,14 @@ PATCH /api/reproducao/evento/:id/diagnostico
 ### UC-14 · Listar eventos com filtros
 
 ```
-GET /api/reproducao/fazenda/:fazendaId
+GET /api/reproduction/fazenda/:fazendaId
   ?tipoEvento=inseminacao_artificial
   &diagnosticoPrenhez=positivo
   &dataInicio=2026-01-01
   &dataFim=2026-05-31
   &page=1&limit=20
 
-GET /api/reproducao/animal/:animalId   → histórico completo de um animal
+GET /api/reproduction/animal/:animalId   → histórico completo de um animal
 ```
 
 ---
@@ -234,15 +234,15 @@ GET /api/reproducao/animal/:animalId   → histórico completo de um animal
 ### UC-15 · Registrar pesagem
 
 ```
-POST /api/pesagem
+POST /api/weighing
 { "animalId": "uuid", "pesoKg": 448.5, "dataPesagem": "2026-05-20" }
 ```
 
 ### UC-16 · Histórico e exclusão
 
 ```
-GET    /api/pesagem/animal/:animalId   → lista ordenada por data desc
-DELETE /api/pesagem/:id
+GET    /api/weighing/animal/:animalId   → lista ordenada por data desc
+DELETE /api/weighing/:id
 ```
 
 ---
@@ -269,7 +269,7 @@ DELETE /api/pesagem/:id
 ### UC-17 · Listar perfis disponíveis
 
 ```
-GET /api/ia/perfis
+GET /api/ai/perfis
 → [
     { "id": "essencial", "nome": "Essencial", "icone": "⚡", "resumo": "Resultado imediato, sem IA",
       "tokensEstimadosPorAnalise": 0, "custoEstimadoPor1000Analises": { "brl": 0 } },
@@ -282,8 +282,8 @@ GET /api/ia/perfis
 ### UC-18 · Configurar perfil de IA da fazenda
 
 ```
-GET   /api/ia/config/:fazendaId   → perfil atual + lista de perfis disponíveis
-PATCH /api/ia/config/:fazendaId   { "perfilIa": "especialista" }
+GET   /api/ai/config/:fazendaId   → perfil atual + lista de perfis disponíveis
+PATCH /api/ai/config/:fazendaId   { "perfilIa": "especialista" }
 → { "mensagem": "Perfil atualizado para \"Especialista\" com sucesso.", ... }
 ```
 
@@ -312,7 +312,7 @@ Avalia a probabilidade de prenhez de uma fêmea específica com um reprodutor e 
 | 11 | Estação do ano (seca = −5) | −5 |
 
 ```
-POST /api/ia/prever-prenhez
+POST /api/ai/prever-prenhez
 {
   "animalId": "uuid",
   "reprodutorId": "uuid",       // opcional
@@ -331,7 +331,7 @@ POST /api/ia/prever-prenhez
     "recomendacoes": ["Realizar diagnóstico de gestação entre 28-35 dias pós-inseminação"],
     "fundamentacao": [ { "fator": "Peso corporal", "pontuacao": "+25 pontos", "referencia": "Embrapa..." } ],
     "formulaProbabilidade": "Probabilidade = 35% + 100 × 0,6 = 95%",
-    "insightGpt": "A vaca Nelore de 445 kg, com duas prenhezes anteriores...",
+    "aiInsight": "A vaca Nelore de 445 kg, com duas prenhezes anteriores...",
     "_meta": { "perfilIa": "padrao", "tokensEntrada": 88, "tokensSaida": 67, "tokensTotal": 155 }
   }
 ```
@@ -349,7 +349,7 @@ Rankeia todos os reprodutores ativos da fazenda por compatibilidade com uma fêm
 - Penalização por fertilidade abaixo do ideal (−10 se score < 60)
 
 ```
-GET /api/ia/recomendar-reprodutor/:fazendaId/:animalId?perfilIaOverride=padrao
+GET /api/ai/recomendar-reprodutor/:fazendaId/:animalId?perfilIaOverride=padrao
 → {
     "animal": { "nome": "Mimosa", "especie": "bovino", "raca": "Nelore", "pesoAtual": 445 },
     "ranking": [
@@ -360,7 +360,7 @@ GET /api/ia/recomendar-reprodutor/:fazendaId/:animalId?perfilIaOverride=padrao
           "scoreFertilidade": 85, "taxaRealPrenhez": null },
         "compatibilidade": 85, "classificacao": "Excelente", "melhorEscolha": false }
     ],
-    "insightGpt": "Recomendo o Black Diamond Angus, pois apresenta a maior compatibilidade...",
+    "aiInsight": "Recomendo o Black Diamond Angus, pois apresenta a maior compatibilidade...",
     "_meta": { "perfilIa": "padrao", "tokensEntrada": 85, "tokensSaida": 73, "tokensTotal": 158 }
   }
 ```
@@ -374,7 +374,7 @@ GET /api/ia/recomendar-reprodutor/:fazendaId/:animalId?perfilIaOverride=padrao
 Avalia **todas as fêmeas elegíveis** da fazenda usando os mesmos 11 fatores e retorna um ranking das mais aptas para inseminação agora. Fêmeas com status `Prenhe`, `Inativo` ou `Descarte` são automaticamente excluídas.
 
 ```
-GET /api/ia/melhor-matriz/:fazendaId
+GET /api/ai/melhor-matriz/:fazendaId
   ?especie=bovino          // filtro opcional
   &protocolo=IATF
   &temperaturaAmbiente=28
@@ -394,7 +394,7 @@ GET /api/ia/melhor-matriz/:fazendaId
       { "posicao": 2, "animal": { "nome": "Branca", "especie": "ovino", "raca": "Dorper" },
         "pesoAtual": 52, "probabilidadePrenhez": 95, "nivelRisco": "baixo", "melhorEscolha": false }
     ],
-    "insightGpt": "Priorize a inseminação de Mimosa e Branca, que apresentam condições ideais...",
+    "aiInsight": "Priorize a inseminação de Mimosa e Branca, que apresentam condições ideais...",
     "_meta": { "perfilIa": "padrao", "tokensEntrada": 92, "tokensSaida": 79, "tokensTotal": 171 }
   }
 ```
@@ -408,7 +408,7 @@ GET /api/ia/melhor-matriz/:fazendaId
 Todas as análises (Chance de Prenhez, Melhor Reprodutor e Melhor Matriz) são persistidas no banco e acessíveis pelo histórico.
 
 ```
-GET /api/ia/historico/fazenda/:fazendaId?page=1&limit=20
+GET /api/ai/historico/fazenda/:fazendaId?page=1&limit=20
 → {
     "data": [
       { "id": "uuid", "tipoAnalise": "melhor_matriz", "perfilIa": "especialista",
@@ -420,7 +420,7 @@ GET /api/ia/historico/fazenda/:fazendaId?page=1&limit=20
     "total": 20, "page": 1, "totalPages": 7
   }
 
-GET /api/ia/historico/:animalId   → análises de um animal específico
+GET /api/ai/historico/:animalId   → análises de um animal específico
 ```
 
 ---
@@ -430,7 +430,7 @@ GET /api/ia/historico/:animalId   → análises de um animal específico
 Mostra o consumo real de IA da fazenda com custo acumulado, médias por perfil e projeções para planejamento financeiro.
 
 ```
-GET /api/ia/relatorio-consumo/:fazendaId
+GET /api/ai/relatorio-consumo/:fazendaId
 → {
     "resumo": {
       "totalAnalises": 20,
@@ -488,7 +488,7 @@ GET /api/dashboard/:fazendaId?periodo=30d&especie=bovino
 ### UC-25 · Relatório de desempenho da fazenda
 
 ```
-GET /api/relatorios/fazenda/:fazendaId
+GET /api/reports/fazenda/:fazendaId
 → {
     "fazenda": { "nome": "...", "taxaMediaPrenhez": 68 },
     "resumo": { "totalAnimais": 10, "totalInseminacoes": 8, "taxaPrenhez": 75 },
@@ -500,14 +500,14 @@ GET /api/relatorios/fazenda/:fazendaId
 ### UC-26 · Relatório de histórico do animal
 
 ```
-GET /api/relatorios/animal/:animalId
+GET /api/reports/animal/:animalId
 → histórico completo com todos os eventos, pesagens e predições do animal
 ```
 
 ### UC-27 · Ranking de reprodutores
 
 ```
-GET /api/relatorios/reprodutores/:fazendaId
+GET /api/reports/reprodutores/:fazendaId
 → lista ordenada por scoreFertilidade com totalInseminacoes e prenhezes reais
 ```
 
@@ -548,42 +548,42 @@ Usuario (1) ──── (N) Fazenda
 
 | Módulo | Método | Rota | Caso de Uso |
 |---|:---:|---|---|
-| **Auth** | POST | `/api/auth/registro` | UC-01 |
+| **Auth** | POST | `/api/auth/register` | UC-01 |
 | | POST | `/api/auth/login` | UC-02 |
-| **Fazendas** | POST | `/api/fazendas` | UC-03 |
-| | GET | `/api/fazendas` | UC-04 |
-| | GET | `/api/fazendas/:id` | UC-05 |
-| | PUT | `/api/fazendas/:id` | UC-05 |
-| **Animais** | POST | `/api/animais` | UC-06 |
-| | GET | `/api/animais/fazenda/:id` | UC-07 |
-| | GET | `/api/animais/:id` | UC-08 |
-| | PUT | `/api/animais/:id` | UC-09 |
-| | DELETE | `/api/animais/:id` | UC-09 |
-| **Reprodutores** | POST | `/api/reprodutores` | UC-10 |
-| | GET | `/api/reprodutores/fazenda/:id` | UC-11 |
-| | GET | `/api/reprodutores/:id` | UC-11 |
-| | PUT | `/api/reprodutores/:id` | UC-11 |
-| | DELETE | `/api/reprodutores/:id` | UC-11 |
-| **Reprodução** | POST | `/api/reproducao/evento` | UC-12 |
-| | PATCH | `/api/reproducao/evento/:id/diagnostico` | UC-13 |
-| | GET | `/api/reproducao/fazenda/:id` | UC-14 |
-| | GET | `/api/reproducao/animal/:id` | UC-14 |
-| **Pesagem** | POST | `/api/pesagem` | UC-15 |
-| | GET | `/api/pesagem/animal/:id` | UC-16 |
-| | DELETE | `/api/pesagem/:id` | UC-16 |
-| **IA** | GET | `/api/ia/perfis` | UC-17 |
-| | GET | `/api/ia/config/:fazendaId` | UC-18 |
-| | PATCH | `/api/ia/config/:fazendaId` | UC-18 |
-| | POST | `/api/ia/prever-prenhez` | UC-19 |
-| | GET | `/api/ia/recomendar-reprodutor/:fId/:aId` | UC-20 |
-| | GET | `/api/ia/melhor-matriz/:fazendaId` | UC-21 |
-| | GET | `/api/ia/historico/fazenda/:fazendaId` | UC-22 |
-| | GET | `/api/ia/historico/:animalId` | UC-22 |
-| | GET | `/api/ia/relatorio-consumo/:fazendaId` | UC-23 |
+| **Fazendas** | POST | `/api/farms` | UC-03 |
+| | GET | `/api/farms` | UC-04 |
+| | GET | `/api/farms/:id` | UC-05 |
+| | PUT | `/api/farms/:id` | UC-05 |
+| **Animais** | POST | `/api/animals` | UC-06 |
+| | GET | `/api/animals/fazenda/:id` | UC-07 |
+| | GET | `/api/animals/:id` | UC-08 |
+| | PUT | `/api/animals/:id` | UC-09 |
+| | DELETE | `/api/animals/:id` | UC-09 |
+| **Reprodutores** | POST | `/api/animals?sex=male` | UC-10 |
+| | GET | `/api/animals?sex=male/fazenda/:id` | UC-11 |
+| | GET | `/api/animals?sex=male/:id` | UC-11 |
+| | PUT | `/api/animals?sex=male/:id` | UC-11 |
+| | DELETE | `/api/animals?sex=male/:id` | UC-11 |
+| **Reprodução** | POST | `/api/reproduction/evento` | UC-12 |
+| | PATCH | `/api/reproduction/evento/:id/diagnostico` | UC-13 |
+| | GET | `/api/reproduction/fazenda/:id` | UC-14 |
+| | GET | `/api/reproduction/animal/:id` | UC-14 |
+| **Pesagem** | POST | `/api/weighing` | UC-15 |
+| | GET | `/api/weighing/animal/:id` | UC-16 |
+| | DELETE | `/api/weighing/:id` | UC-16 |
+| **IA** | GET | `/api/ai/perfis` | UC-17 |
+| | GET | `/api/ai/config/:fazendaId` | UC-18 |
+| | PATCH | `/api/ai/config/:fazendaId` | UC-18 |
+| | POST | `/api/ai/prever-prenhez` | UC-19 |
+| | GET | `/api/ai/recomendar-reprodutor/:fId/:aId` | UC-20 |
+| | GET | `/api/ai/melhor-matriz/:fazendaId` | UC-21 |
+| | GET | `/api/ai/historico/fazenda/:fazendaId` | UC-22 |
+| | GET | `/api/ai/historico/:animalId` | UC-22 |
+| | GET | `/api/ai/relatorio-consumo/:fazendaId` | UC-23 |
 | **Dashboard** | GET | `/api/dashboard/:fazendaId` | UC-24 |
-| **Relatórios** | GET | `/api/relatorios/fazenda/:id` | UC-25 |
-| | GET | `/api/relatorios/animal/:id` | UC-26 |
-| | GET | `/api/relatorios/reprodutores/:id` | UC-27 |
+| **Relatórios** | GET | `/api/reports/fazenda/:id` | UC-25 |
+| | GET | `/api/reports/animal/:id` | UC-26 |
+| | GET | `/api/reports/reprodutores/:id` | UC-27 |
 
 ---
 

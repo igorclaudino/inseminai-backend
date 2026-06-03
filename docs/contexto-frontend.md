@@ -1,349 +1,357 @@
 # Contexto — InsemiAI Frontend
 
-Este documento contém todo o contexto necessário para iniciar o desenvolvimento do frontend em uma nova sessão.
+Contexto atualizado para integração frontend ↔ backend.
 
 ---
 
 ## O Projeto
 
-**InsemiAI** é um sistema web de gestão genética e reprodutiva para bovinos, ovinos e caprinos com análise preditiva de prenhez por Inteligência Artificial.
+**InsemiAI** é um sistema web de gestão genética e reprodutiva para bovinos, ovinos e caprinos com predição de prenhez por Inteligência Artificial.
 
-Desenvolvido para o **Hackathon ExpoAgro Crateús — Edital 01/2026**.
-- Prazo de entrega: **5 de junho de 2026**
-- Prêmio 1º lugar: R$ 7.000
-- Critérios de avaliação: Impacto (50%), Criatividade e Originalidade (30%), Viabilidade (20%)
+Hackathon ExpoAgro Crateús — Edital 01/2026 · Apresentação: **5 de junho de 2026**
 
 ---
 
 ## Backend — Status atual
 
-O backend está **100% implementado e funcional**.
-
-- **Tecnologia:** NestJS + Prisma + PostgreSQL
-- **Porta:** `3001`
-- **Banco:** PostgreSQL na porta `55000` (senha: `root`)
+- **URL de produção:** deploy no Render (verificar variável de ambiente `VITE_API_URL` ou equivalente)
+- **Porta local:** `3001`
 - **Swagger:** `http://localhost:3001/docs`
 - **Prefixo global:** `/api`
 
-### Credenciais de demo
+### Credenciais de demo (após seed)
 
 ```
-Email: demo@pecuaria.ia
-Senha: 123456
-```
-
-### Como rodar o backend
-
-```bash
-cd backend
-npm run start:dev
+Email: luiza@fazendauruguai.com.br
+Senha: Demo@2026
+Fazenda: Fazenda Uruguai — Crateús/CE
 ```
 
 ---
 
-## Todos os endpoints disponíveis
-
-### Autenticação
+## Autenticação
 
 ```
-POST /api/auth/registro     → Cadastrar usuário
-POST /api/auth/login        → Login → retorna { access_token }
+POST /api/auth/register     → criar conta
+POST /api/auth/login        → login → retorna { token, user }
+POST /api/auth/forgot-password
+POST /api/auth/reset-password
+PATCH /api/auth/password    → alterar senha (autenticado)
 ```
 
-Todas as demais rotas exigem: `Authorization: Bearer <token>`
+**Resposta do login:**
+```json
+{ "token": "eyJ...", "user": { "id": "uuid", "name": "Luiza", "email": "luiza@..." } }
+```
+
+Todas as demais rotas exigem:
+```
+Authorization: Bearer <token>
+X-Farm-ID: <uuid_da_fazenda>   ← obrigatório nas rotas protegidas por FarmGuard
+```
+
+O `X-Farm-ID` deve ser enviado após o usuário selecionar/entrar em uma fazenda. Obtê-lo via `GET /api/farms`.
 
 ---
 
-### Fazendas
+## Fazendas
 
 ```
-POST   /api/fazendas              → Criar fazenda
-GET    /api/fazendas              → Listar fazendas do usuário
-GET    /api/fazendas/:id          → Buscar por ID
-PUT    /api/fazendas/:id          → Atualizar
+POST  /api/farms             → criar fazenda (sem X-Farm-ID)
+GET   /api/farms             → listar fazendas do usuário (sem X-Farm-ID)
+GET   /api/farms/current     → dados da fazenda ativa (requer X-Farm-ID)
+PUT   /api/farms             → atualizar fazenda (admin, requer X-Farm-ID)
 ```
+
+**PUT body (todos opcionais):**
+```json
+{ "name": "Fazenda São João", "city": "Crateús", "state": "CE", "aiProfile": "standard" }
+```
+
+`aiProfile`: `"essential" | "brief" | "standard" | "expert"`
 
 ---
 
-### Animais
+## Animais
+
+> **Reprodutores são animais machos da própria fazenda.** Não há módulo separado. Filtrar `sex=male` para listar reprodutores.
 
 ```
-POST   /api/animais                          → Cadastrar animal
-GET    /api/animais/fazenda/:fazendaId       → Listar (paginado)
-GET    /api/animais/:id                      → Buscar por ID (com histórico completo)
-PUT    /api/animais/:id                      → Atualizar
-DELETE /api/animais/:id                      → Inativar (soft delete)
+POST   /api/animals          → cadastrar animal
+GET    /api/animals          → listar (filtros via query)
+GET    /api/animals/:id      → detalhe completo (eventos, pesagens, predições)
+PUT    /api/animals/:id      → atualizar
+DELETE /api/animals/:id      → desativar (admin)
 ```
 
-**Filtros disponíveis no GET /fazenda/:id:**
-- `especie`: bovino | ovino | caprino
-- `sexo`: macho | femea
-- `statusReproducao`: Apto | Prenhe | Em Reprodução | Descarte | Inativo
-- `page`, `limit`
+**Filtros do GET `/api/animals`:**
+```
+species=cattle|sheep|goat
+sex=male|female
+breed=Nelore
+search=Mimosa
+page=1
+limit=20
+```
 
-**Campos relevantes do animal:**
+**Body do POST:**
 ```json
 {
-  "identificador": "BOV-2024-001",
-  "especie": "bovino",
-  "nome": "Mimosa",
-  "raca": "Nelore",
-  "linhagem": "Opcional",
-  "sexo": "femea",
-  "dataNascimento": "2021-03-15",
-  "statusReproducao": "Apto",
-  "scoreCondicaoCorporal": 4,
-  "historicoDoencaReprodutiva": false,
-  "paiId": "uuid-ou-null",
-  "maeId": "uuid-ou-null",
-  "fazendaId": "uuid"
+  "name": "Mimosa",
+  "species": "cattle",
+  "breed": "Nelore",
+  "sex": "female",
+  "birthDate": "2021-03-15",
+  "bodyConditionScore": 3,
+  "reproductiveDiseaseHistory": false,
+  "lineage": "Linhagem A",
+  "sireId": "uuid-ou-omitir",
+  "damId": "uuid-ou-omitir",
+  "initialWeight": 420.5,
+  "initialWeighingDate": "2026-05-10",
+  "photoUrl": "data:image/jpeg;base64,... ou https://..."
 }
 ```
 
----
-
-### Reprodutores
-
-```
-POST   /api/reprodutores                        → Cadastrar reprodutor
-GET    /api/reprodutores/fazenda/:fazendaId     → Listar ativos
-GET    /api/reprodutores/:id                    → Buscar por ID
-PUT    /api/reprodutores/:id                    → Atualizar
-DELETE /api/reprodutores/:id                    → Inativar
-```
-
-> Reprodutor pode ser vinculado a um animal macho da fazenda via `animalId`. Se for sêmen externo, `animalId` fica nulo.
-
-O campo `scoreFertilidade` é calculado automaticamente pelo sistema (0–100).
-
----
-
-### Reprodução (Inseminações e Eventos)
-
-```
-POST   /api/reproducao/evento                        → Registrar evento
-GET    /api/reproducao/fazenda/:fazendaId            → Listar eventos da fazenda (paginado)
-GET    /api/reproducao/animal/:animalId              → Listar eventos de um animal
-PATCH  /api/reproducao/evento/:id/diagnostico        → Atualizar diagnóstico de prenhez
-```
-
-**Body do POST /evento:**
+**Body do DELETE:**
 ```json
-{
-  "animalId": "uuid",
-  "reprodutorId": "uuid-ou-null",
-  "tipoEvento": "inseminacao_artificial",
-  "inseminador": "Dr. Fernando Lima",
-  "semenUtilizado": "Nelore MAX-102",
-  "lote": "Lote 05 - Primíparas",
-  "protocoloReprodutivo": "IATF",
-  "dataEvento": "2026-05-22",
-  "observacoes": "Opcional"
-}
+{ "deletionReason": "Motivo da exclusão" }
 ```
 
-**Tipos de evento:** `inseminacao_artificial` | `monta_natural` | `monta_controlada` | `cio` | `parto` | `aborto` | `prenhez`
-
-**Diagnóstico de prenhez:** `pendente` | `positivo` | `negativo` | `falha_concepcao`
-
-**Resultados possíveis:** `Prenhe` | `Vazia` | `Gêmeos` | `Aborto` | `Natimorto` | `Parto Duplo`
-
-**Filtros do GET /fazenda/:id:**
-- `tipoEvento`, `diagnosticoPrenhez`, `reprodutorId`
-- `dataInicio`, `dataFim`
-- `page`, `limit`
+**Campos importantes na resposta do GET `:id`:**
+- `currentWeight` — último peso (calculado pelo backend)
+- `age` — idade formatada ("2 anos", "5 meses")
+- `daysPostpartum` — dias desde o último parto (calculado)
+- `reproductiveEvents` — histórico de eventos (inclui eventos onde o macho foi reprodutor)
+- `weighings` — histórico de pesagens
+- `sire`, `dam` — dados resumidos do pai/mãe
 
 ---
 
-### Pesagem
+## Reprodução
 
 ```
-POST   /api/pesagem                      → Registrar pesagem
-GET    /api/pesagem/animal/:animalId     → Histórico de pesagens
-DELETE /api/pesagem/:id                  → Remover pesagem
+POST  /api/reproduction/insemination         → registrar inseminação
+POST  /api/reproduction/event                → registrar evento reprodutivo
+GET   /api/reproduction                      → listar eventos da fazenda (paginado)
+GET   /api/reproduction/animal/:animalId     → eventos de um animal
+PATCH /api/reproduction/event/:id/diagnosis  → atualizar diagnóstico
 ```
 
----
-
-### IA — Análise Preditiva
-
-```
-POST /api/ia/prever-prenhez
-GET  /api/ia/recomendar-reprodutor/:fazendaId/:animalId
-GET  /api/ia/historico/fazenda/:fazendaId    → paginado (?page=1&limit=20)
-GET  /api/ia/historico/:animalId
-```
-
-**Body do POST /prever-prenhez:**
+**Body do POST `/insemination`:**
 ```json
 {
   "animalId": "uuid",
-  "reprodutorId": "uuid",
-  "protocolo": "IATF",
-  "temperaturaAmbiente": 28.5,
-  "estacaoAno": "chuvosa"
+  "sireId": "uuid-opcional",
+  "eventDate": "2026-06-01",
+  "inseminator": "Dr. Fernando Lima",
+  "semenUsed": "Nelore MAX-102",
+  "lot": "Lote Junho 2026",
+  "reproductiveProtocol": "IATF",
+  "notes": "opcional"
 }
 ```
 
-**Protocolos aceitos:** `IATF` | `IATF_eCG` | `IA_cio` | `monta_natural`
-**Estação do ano:** `chuvosa` | `seca`
-
-**Resposta do POST /prever-prenhez:**
+**Body do POST `/event`:**
 ```json
 {
-  "probabilidadePrenhez": 81,
-  "scoreFertilidade": 83,
-  "nivelRisco": "baixo",
-  "compatibilidadeGenetica": 88,
-  "fatoresPositivos": ["ECC adequado (4/5)", "Reprodutor com alto score (83)"],
-  "alertas": ["Temperatura elevada pode reduzir taxa de concepção"],
-  "recomendacoes": ["Manter protocolo IATF conforme planejado"],
-  "insightGpt": "Texto narrativo gerado pela IA...",
-  "protocolo": "IATF",
-  "fundamentacao": [
-    {
-      "fator": "Peso corporal",
-      "valorObservado": "420 kg",
-      "pontuacao": 25,
-      "referencia": "Embrapa Pecuária Sudeste, 2021"
-    }
-  ],
-  "formulaProbabilidade": "Probabilidade = 35% (base) + 76 pontos × 0,6 = 81%"
+  "animalId": "uuid",
+  "sireId": "uuid-opcional",
+  "eventType": "artificial_insemination",
+  "eventDate": "2026-06-01",
+  "inseminator": "Dr. Fernando Lima",
+  "semenUsed": "Nelore MAX-102",
+  "lot": "Lote Junho 2026",
+  "reproductiveProtocol": "IATF"
 }
+```
+
+`eventType`: `artificial_insemination | natural_mating | controlled_mating | heat | birth | abortion | pregnancy`
+
+**Body do PATCH `/diagnosis`:**
+```json
+{
+  "pregnancyDiagnosis": "positive",
+  "result": "Prenhez confirmada por ultrassom",
+  "confirmationDate": "2026-06-30"
+}
+```
+
+`pregnancyDiagnosis`: `positive | negative | conception_failure`
+
+---
+
+## Pesagem
+
+```
+POST   /api/weighing                    → registrar pesagem
+GET    /api/weighing/animal/:animalId   → histórico de pesagens
+DELETE /api/weighing/:id                → remover (admin)
+```
+
+**Body do POST:**
+```json
+{ "animalId": "uuid", "weightKg": 435.5, "weighingDate": "2026-06-01", "notes": "opcional" }
 ```
 
 ---
 
-### Dashboard
+## Membros
 
 ```
-GET /api/dashboard/:fazendaId?periodo=30d&especie=bovino
+GET    /api/members                              → listar membros
+POST   /api/members/invite                       → convidar (admin)
+GET    /api/members/invitations                  → convites pendentes
+DELETE /api/members/invitations/:invitationId    → cancelar convite (admin)
+PATCH  /api/members/:memberId                    → alterar papel (admin)
+DELETE /api/members/:memberId                    → remover membro (admin)
 ```
 
-**Períodos:** `7d` | `30d` | `90d` | `365d`
-**Espécie:** `bovino` | `ovino` | `caprino` (omitir para todos)
+**Body do POST `/invite`:**
+```json
+{ "email": "colaborador@fazenda.com", "role": "operator" }
+```
+
+---
+
+## Convites (fluxo público)
+
+```
+GET  /api/invitations/:token         → consultar convite (sem autenticação)
+POST /api/invitations/:token/accept  → aceitar convite (autenticado)
+```
+
+---
+
+## IA — Análises Preditivas
+
+```
+POST /api/ai/predict-pregnancy            → predição de prenhez
+GET  /api/ai/recommend-breeder/:animalId  → reprodutor recomendado para uma fêmea
+GET  /api/ai/best-dam                     → ranking de melhores matrizes
+GET  /api/ai/profiles                     → listar perfis de IA disponíveis
+GET  /api/ai/config                       → perfil de IA da fazenda
+PATCH /api/ai/config                      → alterar perfil (admin)
+GET  /api/ai/consumption-report           → relatório de tokens e custos
+GET  /api/ai/history/farm                 → histórico de predições da fazenda
+GET  /api/ai/history/animal/:animalId     → histórico de predições do animal
+DELETE /api/ai/history/:id                → remover predição
+```
+
+**Body do POST `/predict-pregnancy`:**
+```json
+{
+  "animalId": "uuid",
+  "sireId": "uuid-opcional",
+  "protocol": "IATF",
+  "ambientTemperature": 28,
+  "season": "dry"
+}
+```
+
+**Resposta do POST `/predict-pregnancy`:**
+```json
+{
+  "pregnancyProbability": 81,
+  "fertilityScore": 83,
+  "riskLevel": "low",
+  "geneticCompatibility": 88,
+  "positiveFactors": ["Peso adequado", "Bom ECC"],
+  "alerts": ["Temperatura elevada"],
+  "recommendations": ["Monitorar hidratação"],
+  "aiInsight": "Texto técnico gerado pela IA...",
+  "_meta": { "aiProfile": "standard", "inputTokens": 335, "outputTokens": 320, "totalTokens": 655 }
+}
+```
+
+**Query params do GET `/best-dam`:**
+```
+species=cattle|sheep|goat
+protocol=IATF
+ambientTemperature=28
+season=dry
+limit=5   (máx 20)
+```
+
+---
+
+## Dashboard
+
+```
+GET /api/dashboard
+```
+
+**Query params opcionais:** `period` (`last_week|last_month|last_quarter|last_year|all`), `species` (`cattle|sheep|goat`)
 
 **Resposta:**
 ```json
 {
   "cards": {
-    "totalAnimais": 300,
-    "gravidezesAtivas": 20,
-    "inseminacoesComSucesso": 20,
-    "inseminacoesSemSucesso": 7,
-    "variacaoTotalAnimais": 73,
-    "variacaoGravidezes": 0,
-    "variacaoSucesso": 30,
-    "variacaoFalha": 5
+    "totalAnimals": 120,
+    "pregnant": 22,
+    "inseminationsSuccess": 18,
+    "inseminationsFailure": 7
   },
-  "evolucaoMensal": [...],
-  "distribuicaoPorEspecie": [...]
+  "chart": [{ "month": "Jan", "inseminations": 8, "pregnancies": 6 }],
+  "speciesDistribution": [{ "species": "cattle", "count": 95 }]
 }
 ```
 
 ---
 
-### Relatórios
+## Relatórios
 
 ```
-GET /api/relatorios/fazenda/:fazendaId      → Desempenho geral + taxa de prenhez por espécie
-GET /api/relatorios/animal/:animalId        → Histórico completo + taxa de prenhez do animal
-GET /api/relatorios/reprodutores/:fazendaId → Ranking por score de fertilidade
+GET /api/reports/farm              → desempenho geral da fazenda
+GET /api/reports/animal/:animalId  → desempenho reprodutivo do animal
+GET /api/reports/breeders          → ranking de reprodutores por fertilidade
 ```
 
 ---
 
-## Telas já prototipadas no Figma
+## Regras de negócio importantes
 
-### 1. Dashboard
-- Sidebar: Dashboard, Reprodução, Animais
-- Filtros no topo: Tipo de Animal (dropdown), Período (dropdown), botão Atualizar
-- 4 cards: Total de Animais, Gravidezes Ativas, Inseminações com Sucesso, Inseminações sem Sucesso (cada card com valor, variação percentual e comparativo com período anterior)
-- Tabela "Análises" com colunas: Data, Nome, Tipo (Chance de Prenhez | Melhor Matriz | Melhor Reprodutor), Detalhes (ícone olho), Excluir (ícone lixeira)
-- Botões no canto superior direito: "Baixar Relatório" e "Nova Análise ▾"
-- Botão "Abra um Chamado" na sidebar
-
-### 2. Reprodução
-- Cabeçalho com título "Reprodução" e botão "+ Nova Inseminação"
-- Filtros: Busca (texto livre), Tipo de Animal, Diagnóstico de Prenhez, Resultado, Início/Fim (date pickers), botão "Limpar Campos"
-- Tabela "Inseminações" com colunas: Data, Inseminador, Sêmen Utilizado, Lote, Reprodutor (link), Protocolo, Diagnóstico de Prenhez, Resultado
-- Badges de resultado coloridos: "Em Andamento" (amarelo), "Natimorto" (vermelho escuro), "Parto Duplo" (verde), "Falha na Concepção" (vermelho)
-- Modal "Nova Inseminação": Data*, Inseminador*, Sêmen Utilizado*, Lote (dropdown), Protocolo (dropdown IATF etc.), botões Cancelar/Cadastrar
-- Estado de carregamento: spinner com texto "Cadastrando..."
-
-### 3. Animais — Lista
-- Tabela com colunas: ID, Nome, Tipo, Sexo, Raça, Idade, Peso Atual, Pai, Mãe
-- Filtros por espécie/sexo/status
-- Botão "+ Novo Animal"
-
-### 4. Animais — Cadastro (formulário)
-- Campos: foto (upload), identificador, nome, espécie, raça, linhagem, sexo, data de nascimento, status reprodutivo, ECC (1–5), histórico de doença reprodutiva (checkbox), pai (busca), mãe (busca)
-- Campos de desempenho ponderal: peso ao nascer, ganho pré-desmame, peso ao desmame
-
-### 5. Animal — Detalhe
-- Abas: Dados Cadastrais, Pesagens, Histórico Reprodutivo
-- Pesagens: tabela com histórico + modal para adicionar nova pesagem com gráfico de evolução de peso
-- Histórico Reprodutivo: tabela com eventos reprodutivos do animal
-
-### 6. Predição (modal sobre o Dashboard)
-- Formulário: Tipo de Animal, Raça, Nome do Animal (busca), Reprodutor (busca), Temperatura Ambiente (°C), Estação do Ano
-- Resultado: gauge circular com percentual (ex: 81%), texto "Análise IA" (insightGpt), lista de Recomendações, botões Resumo / Refazer / Salvar
+1. **Reprodutores = animais machos**: usar `GET /api/animals?sex=male&species=<espécie>` para listar reprodutores disponíveis
+2. **Apenas fêmeas** podem ser analisadas em predições de prenhez (`sex=female`)
+3. **Status `Pregnant`** contraindica nova inseminação — mostrar aviso
+4. **`daysPostpartum`** é calculado pelo backend — não calcular no frontend
+5. **Score do reprodutor** (`fertilityScore` 0–100): verde ≥ 80, amarelo 60–79, vermelho < 60
+6. **Nível de risco**: `low` = verde, `moderate` = amarelo, `high` = vermelho
+7. **Foto do animal**: enviar base64 (`data:image/jpeg;base64,...`) no campo `photoUrl` — limite 10MB por request
+8. **Parentesco circular**: backend rejeita `sireId`/`damId` que criariam ciclos na genealogia
+9. **`mustChangePassword`**: usuários criados por admin ou convidados têm esta flag — redirecionar para troca de senha no primeiro login
+10. **`aiProfile` padrão** da fazenda: `standard` — pode ser alterado pelo admin via `PUT /api/farms`
 
 ---
 
-## Identidade visual
+## Perfis de IA (para o seletor de configuração)
 
-- **Nome:** InsemiAI
-- **Cor primária:** Verde escuro (`#1a5c1a` ou similar — tom do agronegócio)
-- **Sidebar:** Fundo verde escuro com ícones e texto branco
-- **Conteúdo:** Fundo branco/cinza claro
-- **Badges:** Verde (sucesso), Vermelho (falha), Amarelo (pendente)
-- **Fonte:** Sans-serif (Inter ou similar)
+| id | icon | name | summary | estimatedLatency |
+|---|---|---|---|---|
+| `essential` | ⚡ | Essencial | Apenas cálculo local, sem custo de IA | < 200 ms |
+| `brief` | 💬 | Rápido | Recomendação da IA em uma frase | < 1 segundo |
+| `standard` | 📋 | Padrão | Análise em 1–2 frases | 1–2 segundos |
+| `expert` | 🔬 | Expert | Relatório técnico completo | 3–5 segundos |
 
----
-
-## Regras de negócio importantes para o frontend
-
-1. **Apenas fêmeas** aparecem nas análises de prenhez. Filtrar `sexo === 'femea'` ao selecionar animal para predição.
-2. **Status "Prenhe"** contraindica nova inseminação — mostrar aviso.
-3. **`diasPosParto`** é calculado dinamicamente a partir de `dataUltimoParto` — o backend já retorna esse valor calculado.
-4. **Score do reprodutor** (0–100): verde ≥ 80, amarelo 60–79, vermelho < 60.
-5. **Nível de risco da predição:** baixo = verde, moderado = amarelo, alto = vermelho.
-6. **`estacaoAno`** aceita apenas `"chuvosa"` ou `"seca"`.
-7. O relatório do dashboard é gerado a partir dos dados já exibidos (botão "Baixar Relatório" no canto superior direito).
-8. Reprodutor pode existir sem vínculo a um animal da fazenda (sêmen externo).
-
----
-
-## Dados de seed disponíveis para testar
-
-Após `npm run prisma:seed`:
-
-| Animal | Espécie | Risco esperado |
-|--------|---------|----------------|
-| Mimosa (BOV-001) | Bovino | Alto (favorável) |
-| Estrela (BOV-002) | Bovino | Moderado |
-| Pérola (BOV-003) | Bovino | Alto risco (ECC 2, abortos) |
-| Branca (OVI-001) | Ovino | Alto (favorável) |
-| Lua (OVI-003) | Ovino | Moderado |
-| Nuvem (CAP-001) | Caprino | Alto (favorável) |
-| Rosa (CAP-003) | Caprino | Alto risco |
+Buscar via `GET /api/ai/profiles` para sempre ter os dados atualizados.
 
 ---
 
 ## Fluxo de autenticação
 
-1. `POST /api/auth/login` → recebe `{ access_token }`
-2. Armazenar token (localStorage ou cookie httpOnly)
+1. `POST /api/auth/login` → recebe `{ token, user }`
+2. Armazenar `token` (localStorage ou cookie)
 3. Enviar em todas as requisições: `Authorization: Bearer <token>`
-4. Token expira em 7 dias (`JWT_EXPIRES_IN=7d`)
+4. Armazenar `farmId` da fazenda selecionada e enviar: `X-Farm-ID: <farmId>`
+5. Token expira em 7 dias
 
 ---
 
-## Observações finais
+## Observações técnicas
 
-- O backend já tem CORS habilitado (`app.enableCors()`) — sem restrição de origem em dev.
-- Swagger completo em `http://localhost:3001/docs` — usar para explorar todos os exemplos de request/response.
-- O `insightGpt` pode demorar 2–4 segundos (chamada OpenAI) — considerar loading state na tela de predição.
-- Todos os IDs são UUIDs.
-- Datas no formato ISO 8601 (`2026-05-22T00:00:00.000Z`).
+- CORS habilitado para `FRONTEND_URL` (configurado no servidor)
+- Swagger completo em `/docs`
+- Latência da IA: 1–5 segundos dependendo do perfil — usar loading state
+- Todos os IDs são UUIDs
+- Datas no formato ISO 8601 (`"2026-06-01"` ou `"2026-06-01T12:00:00.000Z"`)
+- Paginação: todas as listas retornam `{ data, total, page, limit, totalPages }`

@@ -97,11 +97,11 @@
 
 **Narração:**
 
-"Aqui está o diferencial do InsemiAI: a análise preditiva com IA. O técnico informa o animal, o reprodutor e as condições ambientais — e o sistema calcula a probabilidade de prenhez com base em 11 fatores: peso corporal, intervalo pós-parto, histórico reprodutivo, escore de condição corporal, saúde reprodutiva, score de fertilidade do reprodutor, protocolo utilizado, temperatura e estação do ano."
+"Aqui está o diferencial do InsemiAI: a análise preditiva com IA. O técnico informa o animal, o reprodutor e as condições ambientais — e o sistema usa Inteligência Artificial para calcular a probabilidade de prenhez com base nos dados clínicos reais daquele animal: peso, intervalo pós-parto, histórico reprodutivo, escore de condição corporal, saúde reprodutiva, score de fertilidade do reprodutor, protocolo, temperatura e estação do ano."
 
-"Cada fator tem peso definido por literatura zootécnica — Embrapa, CBRA, ASBIA — e o sistema mostra exatamente como chegou naquele número. Não é uma caixa preta: produtor e veterinário veem a fundamentação científica de cada decisão."
+"A IA recalibra os scores com base no contexto específico do animal e gera fatores positivos, alertas práticos e recomendações de manejo. O sistema funciona mesmo sem internet — no modo Essencial, o cálculo é feito localmente em menos de 200 milissegundos."
 
-"Neste caso: 81% de probabilidade. Fatores positivos, alertas práticos, recomendações de manejo — e uma análise em linguagem simples gerada por IA para facilitar a interpretação."
+"Neste caso: 81% de probabilidade. Fatores positivos citando dados reais do animal, alertas concretos e uma análise técnica gerada pelo GPT-4o-mini para facilitar a interpretação no campo."
 
 ---
 

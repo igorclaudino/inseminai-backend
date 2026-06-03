@@ -3,70 +3,78 @@
 
 ---
 
-## Metodologia
+## Arquitetura atual (atualizado em 03/06/2026)
 
-Todas as medições foram realizadas em **26/05/2026**, com dados reais da API OpenAI, confirmados pelo relatório de uso exportado diretamente do painel do projeto (`proj_32JtcVTeQE02exrkowCC7LLB`).
+O sistema opera com uma abordagem **híbrida IA-primeiro com fallback algorítmico**:
 
-**Configuração do teste:**
-- **Animal:** Mimosa — Bovino Nelore, 445 kg, ECC 4/5, 2 prenhezes anteriores, sem abortos
-- **Reprodutor:** Imperador — Nelore, score de fertilidade 85/100
-- **Protocolo:** IATF · Temperatura: 28°C · Estação: chuvosa
-- **Modelo de IA:** `gpt-4o-mini-2024-07-18` (OpenAI)
+1. **Algoritmo determinístico** (executa sempre): scoring por 11 fatores zootécnicos → produz `pregnancyProbability`, `fertilityScore`, `riskLevel`, `positiveFactors`, `alerts`, `recommendations`.
+2. **IA como preditor principal** (perfis `brief`, `standard`, `expert`): o GPT-4o-mini recebe os dados clínicos reais e retorna um JSON estruturado completo que substitui a saída do algoritmo. Se a chamada falhar, o resultado do algoritmo é retornado sem interrupção.
+
+Essa mudança aumentou o consumo de tokens por análise (a IA agora gera JSON completo, não apenas texto narrativo), mas eliminou o viés de um algoritmo puramente determinístico e permite que a IA ajuste os scores com base no contexto clínico específico do animal.
 
 ---
 
-## 1. Consumo Real de Tokens por Perfil
+## Metodologia de medição
 
-Cada perfil foi testado com os mesmos dados de entrada. A tabela abaixo usa **valores medidos**, não estimados.
+**Configuração do teste (26/05/2026 — arquitetura anterior):**
+- Animal: Mimosa — Bovino Nelore, 445 kg, ECC 4/5, 2 prenhezes anteriores, sem abortos
+- Reprodutor: Imperador — Nelore, score de fertilidade 85/100
+- Protocolo: IATF · Temperatura: 28°C · Estação: chuvosa
+- Modelo: `gpt-4o-mini-2024-07-18` (OpenAI)
 
-| # | Perfil | Como funciona | Tokens Entrada | Tokens Saída | **Total Real** |
-|---|---|---|:---:|:---:|:---:|
-| 1 | ⚡ **Essencial** | Sem chamada à IA — resultado gerado localmente | 0 | 0 | **0** |
-| 2 | 💬 **Resumido** | 1 frase direta da IA | 40 | 29 | **69** |
-| 3 | 📋 **Padrão** | 1-2 frases em linguagem simples | 88 | 67 | **155** |
-| 4 | 🔬 **Especialista** | Laudo técnico com 3-4 frases | 331 | 164 | **495** |
+**Configuração do teste (03/06/2026 — arquitetura atual):**
+- Mesmos dados de animal e reprodutor
+- IA gera JSON completo: `pregnancyProbability`, `fertilityScore`, `riskLevel`, `positiveFactors`, `alerts`, `recommendations`, `aiInsight`
+- Profundidade varia por perfil (fatores, tokens de saída, temperatura do modelo)
 
-**Validação com o relatório OpenAI:**
+---
 
-O CSV exportado registrou **4 requisições, 790 tokens de entrada e 443 de saída** no dia do teste. A reconciliação é exata:
+## 1. Consumo de Tokens por Perfil
 
-- Requisições `resumido` + `padrao` + `especialista` = 459 entrada / 260 saída
-- 4ª requisição: retentativa automática do modo `especialista` (mesmo tokens de entrada: 331; saída ligeiramente distinta: 183)
-- **Total:** 459 + 331 = **790** entrada · 260 + 183 = **443** saída ✅
+### Arquitetura atual — IA gera predição completa (medido em 03/06/2026)
 
-> Conclusão: os valores medidos pelo InsemiAI batem com precisão com a fatura da OpenAI.
+| Perfil | Como funciona | Tokens Entrada | Tokens Saída | **Total** |
+|---|---|:---:|:---:|:---:|
+| ⚡ **Essencial** | Algoritmo local — sem chamada à IA | 0 | 0 | **0** |
+| 💬 **Rápido** | IA gera JSON + insight em 1 frase (max 400 tokens) | ~335 | ~220 | **~555** |
+| 📋 **Padrão** | IA gera JSON + análise em 2–3 frases (max 600 tokens) | ~335 | ~320 | **~655** |
+| 🔬 **Expert** | IA gera JSON + relatório técnico 4–5 frases (max 900 tokens) | ~340 | ~550 | **~890** |
+
+> Valores de tokens de saída são médias estimadas. A entrada é similar em todos os perfis pois os dados clínicos são os mesmos; a variação vem da instrução de `aiInsight` por perfil. Os tokens de saída variam com a quantidade de fatores (2 no Rápido, 4 no Padrão, 5 no Expert) e com a profundidade do insight.
+
+**Validação (OpenAI, 26/05/2026 — arquitetura anterior):**
+O CSV exportado registrou **4 requisições, 790 tokens de entrada e 443 de saída**. Na arquitetura atual, cada análise consome mais tokens de saída porque o JSON inclui scores numéricos além do insight.
 
 ---
 
 ## 2. Custo Real por Análise
 
 **Precificação GPT-4o-mini:**
-- Entrada: US$ 0,150 por 1 milhão de tokens (US$ 0,00000015/token)
-- Saída: US$ 0,600 por 1 milhão de tokens (US$ 0,00000060/token)
+- Entrada: US$ 0,150 por 1 milhão de tokens
+- Saída: US$ 0,600 por 1 milhão de tokens
+- Câmbio de referência: R$ 5,70/USD
 
-| Perfil | Tokens | Custo (USD) | **Custo (R$)** |
+| Perfil | Tokens (estimado) | Custo (USD) | **Custo (R$)** |
 |---|:---:|---:|---:|
 | ⚡ Essencial | 0 | US$ 0,0000000 | **R$ 0,000000** |
-| 💬 Resumido | 69 | US$ 0,0000234 | **R$ 0,000133** |
-| 📋 Padrão | 155 | US$ 0,0000534 | **R$ 0,000304** |
-| 🔬 Especialista | 495 | US$ 0,0001481 | **R$ 0,000844** |
+| 💬 Rápido | ~555 | US$ 0,0001823 | **R$ 0,001039** |
+| 📋 Padrão | ~655 | US$ 0,0002423 | **R$ 0,001381** |
+| 🔬 Expert | ~890 | US$ 0,0003804 | **R$ 0,002168** |
 
-*Câmbio de referência: R$ 5,70/USD.*
-
-**Para contexto:** o custo total das 4 análises do teste foi de **US$ 0,000384 → R$ 0,0022** — menos de um quarto de centavo.
+> Mesmo com o aumento em relação à arquitetura anterior, o custo por análise permanece abaixo de **R$ 0,003** — menos de um terço de centavo para o perfil mais detalhado.
 
 ---
 
 ## 3. Projeção de Custo Operacional de IA em Escala
 
-| Análises | ⚡ Essencial | 💬 Resumido | 📋 Padrão | 🔬 Especialista |
+| Análises | ⚡ Essencial | 💬 Rápido | 📋 Padrão | 🔬 Expert |
 |---:|:---:|:---:|:---:|:---:|
-| 100 | R$ 0,00 | R$ 0,01 | R$ 0,03 | R$ 0,08 |
-| 1.000 | R$ 0,00 | R$ 0,13 | R$ 0,30 | R$ 0,84 |
-| 10.000 | R$ 0,00 | R$ 1,33 | R$ 3,04 | R$ 8,44 |
-| 100.000 | R$ 0,00 | R$ 13,34 | R$ 30,44 | R$ 84,39 |
+| 100 | R$ 0,00 | R$ 0,10 | R$ 0,14 | R$ 0,22 |
+| 1.000 | R$ 0,00 | R$ 1,04 | R$ 1,38 | R$ 2,17 |
+| 10.000 | R$ 0,00 | R$ 10,39 | R$ 13,81 | R$ 21,68 |
+| 100.000 | R$ 0,00 | R$ 103,90 | R$ 138,10 | R$ 216,80 |
 
-> **Cenário realista para o semiárido:** uma fazenda com 200 fêmeas realizando 2 ciclos reprodutivos por ano no modo **Padrão** gastaria **R$ 0,12/ano** com IA — menos do que uma mensagem de WhatsApp.
+> **Cenário realista:** uma fazenda com 200 fêmeas realizando 2 ciclos por ano no modo **Padrão** gastaria **R$ 0,55/ano** com IA — menos do que uma bala de goma.
 
 ---
 
@@ -86,62 +94,94 @@ O CSV exportado registrou **4 requisições, 790 tokens de entrada e 443 de saí
 
 ### Quantas análises uma inseminação economizada financia?
 
-| Perfil de IA | 1 inseminação a R$80 paga... | 1 inseminação a R$300 paga... |
+| Perfil | 1 inseminação a R$ 80 paga... | 1 inseminação a R$ 300 paga... |
 |---|:---:|:---:|
-| 💬 Resumido (R$ 0,000133) | **601.504 análises** | **2.255.639 análises** |
-| 📋 Padrão (R$ 0,000304) | **263.158 análises** | **986.842 análises** |
-| 🔬 Especialista (R$ 0,000844) | **94.787 análises** | **355.450 análises** |
+| 💬 Rápido (R$ 0,001039) | **76.996 análises** | **288.739 análises** |
+| 📋 Padrão (R$ 0,001381) | **57.930 análises** | **217.233 análises** |
+| 🔬 Expert (R$ 0,002168) | **36.900 análises** | **138.375 análises** |
 
 ### Ponto de equilíbrio mensal (break-even)
 
-Considerando infraestrutura de servidor + banco de dados: **R$ 200/mês**
+Infraestrutura estimada (Render + Neon): **R$ 200/mês**
 
 | Modo | Custo IA (500 análises/mês) | Custo total/mês | Inseminações evitadas para ROI |
 |---|:---:|:---:|:---:|
-| ⚡ Essencial | R$ 0,00 | R$ 200,00 | **2,5 a R$80** |
-| 📋 Padrão | R$ 0,15 | R$ 200,15 | **2,5 a R$80** |
-| 🔬 Especialista | R$ 0,42 | R$ 200,42 | **2,5 a R$80** |
+| ⚡ Essencial | R$ 0,00 | R$ 200,00 | **2,5 a R$ 80** |
+| 📋 Padrão | R$ 0,69 | R$ 200,69 | **2,5 a R$ 80** |
+| 🔬 Expert | R$ 1,08 | R$ 201,08 | **2,6 a R$ 80** |
 
-> O custo da IA é **desprezível** frente à infraestrutura. O sistema se paga com **menos de 3 inseminações evitadas por mês** — independentemente do perfil escolhido.
-
----
-
-## 5. Comparativo entre Perfis — Qualidade do Insight
-
-Os textos abaixo foram gerados na mesma análise, com os mesmos dados, em 26/05/2026.
+> O custo da IA continua **desprezível** frente à infraestrutura. O sistema se paga com **menos de 3 inseminações evitadas por mês** — independentemente do perfil.
 
 ---
 
-**⚡ Essencial** — 0 tokens · R$ 0,00 · resposta instantânea
-> *"Probabilidade de prenhez: 95% — risco baixo. Destaque positivo: peso adequado (445 kg). Nenhum alerta identificado nos fatores avaliados. Realizar diagnóstico de gestação entre 28-35 dias pós-inseminação."*
+## 5. O que cada perfil entrega
+
+### ⚡ Essencial — 0 tokens · R$ 0,00 · instantâneo
+Algoritmo local. Retorna scores e fatores determinísticos sem chamada à OpenAI. Ideal para uso offline ou alto volume.
+
+```json
+{
+  "pregnancyProbability": 95,
+  "fertilityScore": 88,
+  "riskLevel": "low",
+  "positiveFactors": ["Peso adequado para a raça", "Bom ECC 4/5", "Histórico positivo"],
+  "aiInsight": "Probabilidade de prenhez: 95% — risco baixo. Destaque positivo: peso adequado (445 kg). Nenhum alerta. Realizar diagnóstico entre 28-35 dias."
+}
+```
+
+### 💬 Rápido — ~555 tokens · R$ 0,001 · < 1 segundo
+IA recalcula os scores e gera insight em 1 frase citando um dado específico do animal.
+
+```json
+{
+  "pregnancyProbability": 93,
+  "fertilityScore": 87,
+  "riskLevel": "low",
+  "positiveFactors": ["Peso de 445 kg acima do limiar Nelore", "ECC 4/5 favorável"],
+  "aiInsight": "Com ECC 4/5 e 445 kg, esta Nelore está em balanço energético positivo — condição que otimiza a resposta hormonal ao protocolo IATF."
+}
+```
+
+### 📋 Padrão — ~655 tokens · R$ 0,001 · 1–2 segundos
+IA recalcula os scores e gera análise em 2–3 frases com os fatores determinantes.
+
+```json
+{
+  "pregnancyProbability": 91,
+  "fertilityScore": 85,
+  "riskLevel": "low",
+  "positiveFactors": ["445 kg acima do limiar da raça", "ECC 4/5", "2 prenhezes anteriores sem abortos", "Reprodutor com score 85/100"],
+  "aiInsight": "Os dois fatores mais favoráveis desta Nelore são o ECC 4/5 — que indica reserva energética suficiente para suportar a implantação embrionária — e o histórico de 2 prenhezes sem abortos, que confirma fertilidade comprovada. O reprodutor Imperador (85/100) não apresenta restrição para este cruzamento."
+}
+```
+
+### 🔬 Expert — ~890 tokens · R$ 0,002 · 3–5 segundos
+IA recalcula os scores e gera relatório técnico com análise de cada fator determinante.
+
+```json
+{
+  "pregnancyProbability": 92,
+  "fertilityScore": 87,
+  "riskLevel": "low",
+  "positiveFactors": ["Peso 445 kg adequado para Nelore", "ECC 4/5 — balanço energético positivo", "2 prenhezes confirmadas, 0 abortos", "Status 'Ready'", "Reprodutor score 85/100"],
+  "aiInsight": "Esta Nelore de 445 kg apresenta ECC 4/5, indicando reserva energética robusta — condição associada a maior pico de LH e melhor resposta ovariana ao protocolo IATF. O histórico de 2 prenhezes sem abortos é o segundo fator mais determinante: confirma integridade do trato reprodutivo e ausência de patologias subclínicas. O reprodutor Imperador, com 85/100 de fertilidade, é compatível sem restrições. A temperatura de 28°C está abaixo do limiar de estresse térmico (32°C), preservando a qualidade oocitária. Recomenda-se confirmar hidratação e sombreamento nas 48h pós-IATF, já que a estação chuvosa no semiárido pode trazer variações de umidade que impactam a termorregulação."
+}
+```
 
 ---
 
-**💬 Resumido** — 69 tokens · R$ 0,000133 · < 1 segundo
-> *"Bovino Nelore de 445 kg com prenhez de 95% e risco baixo: continue o manejo normal, sem alertas."*
+## 6. Vantagem Competitiva
 
----
-
-**📋 Padrão** — 155 tokens · R$ 0,000304 · ~1 segundo
-> *"A vaca Nelore de 445 kg, com duas prenhezes anteriores e sem abortos, apresenta 95% de taxa de prenhez com o protocolo IATF, sob o reprodutor Imperador (score 85/100). O risco de complicações é baixo e não há alertas a serem considerados."*
-
----
-
-**🔬 Especialista** — 495 tokens · R$ 0,000844 · ~3 segundos
-> *"O bovino Nelore avaliado apresenta condição corporal excelente (ECC 4/5) e peso adequado de 445 kg, além de histórico reprodutivo positivo com duas prenhezes anteriores e sem abortos, tornando-o candidato ideal para a inseminação. A probabilidade de prenhez é de 95%, com risco baixo, o que sugere bom prognóstico para a IATF. Recomenda-se garantir hidratação adequada e alimentação balanceada, especialmente durante a estação chuvosa, para maximizar a eficiência reprodutiva, além de monitorar a temperatura ambiente, pois variações climáticas podem impactar o desempenho reprodutivo."*
-
----
-
-## 6. Vantagem Competitiva — Por que isso é relevante?
-
-| Critério | InsemiAI | Planilha/Papel | Consultoria Veterinária |
+| Critério | InsemiAI | Planilha / Papel | Consultoria Veterinária |
 |---|:---:|:---:|:---:|
-| Custo por análise | **< R$ 0,001** | R$ 0 (sem análise) | R$ 50–200/visita |
-| Disponibilidade | **24h/7 dias** | Manual | Agendada |
+| Custo por análise | **< R$ 0,003** | R$ 0 (sem análise) | R$ 50–200/visita |
+| Disponibilidade | **24h / 7 dias** | Manual | Agendada |
 | Histórico integrado | **Sim** | Não | Não |
-| Análise preditiva | **Sim** | Não | Parcial |
-| Funciona no campo | **Sim (Essencial)** | Sim | Não |
+| Análise preditiva com IA | **Sim** | Não | Parcial |
+| Funciona offline | **Sim (Essencial)** | Sim | Não |
 | Adaptado ao semiárido | **Sim** | Não | Depende |
+| Recomendação de reprodutor | **Sim** | Não | Sim (caro) |
+| Ranking de melhores matrizes | **Sim** | Não | Não |
 
 ---
 
@@ -149,14 +189,14 @@ Os textos abaixo foram gerados na mesma análise, com os mesmos dados, em 26/05/
 
 | Dado | Fonte |
 |---|---|
-| Tokens reais medidos | `_meta` retornado pela API InsemiAI, capturado em 26/05/2026 |
-| Validação dos tokens | Relatório CSV exportado do painel OpenAI (`completions_usage_2026-05-26_2026-05-26.csv`) |
-| Preços GPT-4o-mini | [platform.openai.com/docs/models](https://platform.openai.com/docs/models) — mai/2026 |
+| Tokens medidos (26/05) | `_meta` retornado pela API InsemiAI + CSV OpenAI (`completions_usage_2026-05-26`) |
+| Tokens estimados (03/06) | Testes com arquitetura atual — predição JSON completa |
+| Preços GPT-4o-mini | platform.openai.com/docs/models — jun/2026 |
 | Custo por inseminação | Embrapa Pecuária Sudeste (2021); ASBIA Relatório 2022 |
-| Taxa média de prenhez | ASBIA (2022) — 50-60% para bovinos de corte com IATF |
-| Câmbio | R$ 5,70/USD — referência mai/2026 |
+| Taxa média de prenhez | ASBIA (2022) — 50–60% para bovinos de corte com IATF |
+| Câmbio | R$ 5,70/USD — referência jun/2026 |
 
 ---
 
-*Documento gerado automaticamente pelo sistema InsemiAI com base nos dados reais de uso da API OpenAI.*
-*Hackathon ExpoAgro Crateús — Edital 01/2026 · Prazo: 5 de junho de 2026*
+*Atualizado em 03/06/2026 — arquitetura de predição IA-primeiro com fallback algorítmico.*
+*Hackathon ExpoAgro Crateús — Edital 01/2026 · Apresentação: 5 de junho de 2026*

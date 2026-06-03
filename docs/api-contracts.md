@@ -106,7 +106,11 @@ Retorna dados da fazenda ativa.
 ### `PUT /api/farms` _(admin)_
 Atualiza dados da fazenda ativa.
 
-**Body:** qualquer campo de `CreateFarmDto` (todos opcionais).
+**Body (todos opcionais):**
+```json
+{ "name": "Fazenda São João", "city": "Crateús", "state": "CE", "aiProfile": "standard" }
+```
+> `aiProfile`: `"essential" | "brief" | "standard" | "expert"`
 
 ---
 
@@ -202,57 +206,11 @@ Atualiza animal. Body: mesmos campos de `CreateAnimalDto`, todos opcionais.
 
 ---
 
-## Reprodutores (Breeders)
+## Reprodutores
 
-### `POST /api/breeders`
+> **Não existe módulo separado de reprodutores.** Os reprodutores são os **animais machos** (`sex: "male"`) da própria fazenda. Use `GET /api/animals?sex=male&species=<espécie>` para listar os disponíveis.
 
-**Body:**
-```json
-{
-  "animalId": "uuid-opcional",
-  "name": "Imperador",
-  "species": "cattle",
-  "breed": "Nelore",
-  "totalInseminations": 12,
-  "pregnancies": 9
-}
-```
-
-> Se `animalId` for informado, os campos `name`/`species`/`breed` são preenchidos automaticamente a partir do animal.
-
----
-
-### `GET /api/breeders`
-
-**Query:** `species`, `page`, `limit`
-
-**Response 200:**
-```json
-{
-  "data": [
-    {
-      "id": "uuid",
-      "name": "Imperador",
-      "species": "cattle",
-      "breed": "Nelore",
-      "fertilityScore": 87,
-      "totalInseminations": 12,
-      "pregnancies": 9,
-      "active": true
-    }
-  ],
-  "total": 5,
-  "page": 1,
-  "limit": 20,
-  "totalPages": 1
-}
-```
-
----
-
-### `GET /api/breeders/:id`
-### `PUT /api/breeders/:id`
-### `DELETE /api/breeders/:id` _(admin)_
+O campo `fertilityScore` (0–100) é calculado automaticamente pelo sistema com base no histórico real de inseminações do animal.
 
 ---
 
@@ -264,7 +222,7 @@ Atualiza animal. Body: mesmos campos de `CreateAnimalDto`, todos opcionais.
 ```json
 {
   "animalId": "uuid",
-  "breederId": "uuid-opcional",
+  "sireId": "uuid-opcional",
   "eventType": "artificial_insemination",
   "inseminator": "Dr. Carlos",
   "semenUsed": "Nelore Lote A",
@@ -479,8 +437,8 @@ Prediz probabilidade de prenhez para um animal.
 ```json
 {
   "animalId": "uuid",
-  "breederId": "uuid-opcional",
-  "protocol": "FTAI",
+  "sireId": "uuid-opcional",
+  "protocol": "IATF",
   "ambientTemperature": 28,
   "season": "dry",
   "reproductiveEventId": "uuid-opcional"
@@ -530,13 +488,14 @@ Ranqueia reprodutores compatíveis com a fêmea.
   "ranking": [
     {
       "position": 1,
-      "breeder": {
+      "sire": {
         "id": "uuid",
+        "identifier": "BOV-005",
         "name": "Imperador",
         "breed": "Nelore",
         "fertilityScore": 87,
         "totalInseminations": 12,
-        "pregnancies": 9,
+        "pregnanciesAsBreeder": 9,
         "actualPregnancyRate": 75
       },
       "compatibility": 90,
@@ -605,29 +564,29 @@ Lista todos os perfis de IA disponíveis.
 [
   {
     "id": "essential",
-    "name": "Essential",
+    "name": "Essencial",
     "icon": "⚡",
-    "summary": "Local analysis only, zero AI cost",
-    "description": "Fast scoring with no API calls...",
+    "summary": "Apenas cálculo local, sem custo de IA",
+    "description": "Pontuação rápida sem chamadas de API...",
     "estimatedLatency": "< 200 ms",
     "estimatedTokensPerAnalysis": 0,
     "estimatedCostPer1000Analyses": { "usd": 0, "brl": 0 }
   },
   {
     "id": "brief",
-    "name": "Brief",
+    "name": "Rápido",
     "icon": "💬",
-    "summary": "Single-sentence AI insight",
-    "estimatedLatency": "< 1 second",
+    "summary": "Recomendação da IA em uma frase",
+    "estimatedLatency": "< 1 segundo",
     "estimatedTokensPerAnalysis": 70,
     "estimatedCostPer1000Analyses": { "usd": 0.026, "brl": 0.15 }
   },
   {
     "id": "standard",
-    "name": "Standard",
+    "name": "Padrão",
     "icon": "📋",
-    "summary": "1–2 sentence analysis",
-    "estimatedLatency": "1–2 seconds",
+    "summary": "Análise em 1–2 frases",
+    "estimatedLatency": "1–2 segundos",
     "estimatedTokensPerAnalysis": 130,
     "estimatedCostPer1000Analyses": { "usd": 0.056, "brl": 0.32 }
   },
@@ -635,8 +594,8 @@ Lista todos os perfis de IA disponíveis.
     "id": "expert",
     "name": "Expert",
     "icon": "🔬",
-    "summary": "Full technical report",
-    "estimatedLatency": "3–5 seconds",
+    "summary": "Relatório técnico completo",
+    "estimatedLatency": "3–5 segundos",
     "estimatedTokensPerAnalysis": 380,
     "estimatedCostPer1000Analyses": { "usd": 0.17, "brl": 0.97 }
   }
