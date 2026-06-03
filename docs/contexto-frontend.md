@@ -22,7 +22,7 @@ Hackathon ExpoAgro Crateús — Edital 01/2026 · Apresentação: **5 de junho d
 ### Credenciais de demo (após seed)
 
 ```
-Email: luiza@fazendauruguai.com.br
+Email: demo@insemiai.com.br
 Senha: Demo@2026
 Fazenda: Fazenda Uruguai — Crateús/CE
 ```

@@ -1,7 +1,7 @@
 # InsemiAI — Roteiro de Demo
 
 **Duração máxima:** 10 minutos  
-**Credenciais:** luiza@fazendauruguai.com.br / Demo@2026  
+**Credenciais:** demo@insemiai.com.br / Demo@2026  
 **Fazenda:** Fazenda Uruguai — Crateús/CE  
 **Perfil de IA configurado:** Padrão (`standard`)
 
@@ -20,7 +20,7 @@
 
 ## Bloco 1 — Dashboard e Animais (2–4 min)
 
-**Login** com `luiza@fazendauruguai.com.br` / `Demo@2026`.
+**Login** com `demo@insemiai.com.br` / `Demo@2026`.
 
 **Dashboard:**
 - Mostrar os 4 cards: Total de Animais, Gravidezes Ativas, Inseminações com Sucesso, Sem Sucesso

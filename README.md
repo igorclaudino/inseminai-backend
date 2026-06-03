@@ -91,7 +91,7 @@ Após executar o seed:
 
 | Campo | Valor |
 |---|---|
-| E-mail | `luiza@fazendauruguai.com.br` |
+| E-mail | `demo@insemiai.com.br` |
 | Senha | `Demo@2026` |
 | Fazenda | Fazenda Uruguai — Crateús/CE |
 

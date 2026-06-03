@@ -7,44 +7,54 @@ const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 async function main() {
   console.log('🌱 Iniciando seed de dados para demo...\n');
 
+  // ─── Limpeza: apaga dados da fazenda demo para garantir estado inicial limpo ──
+  console.log('🧹 Limpando dados anteriores da conta demo...');
+  const existingUser = await prisma.user.findUnique({ where: { email: 'demo@insemiai.com.br' } });
+  if (existingUser) {
+    const membership = await prisma.farmMember.findFirst({ where: { userId: existingUser.id } });
+    if (membership) {
+      const fId = membership.farmId;
+      await prisma.prediction.deleteMany({ where: { animal: { farmId: fId } } });
+      await prisma.reproductiveEvent.deleteMany({ where: { animal: { farmId: fId } } });
+      await prisma.weighing.deleteMany({ where: { animal: { farmId: fId } } });
+      await prisma.farmMember.deleteMany({ where: { farmId: fId } });
+      await prisma.farmInvitation.deleteMany({ where: { farmId: fId } });
+      await prisma.animal.deleteMany({ where: { farmId: fId } });
+      await prisma.farm.delete({ where: { id: fId } });
+    }
+    await prisma.user.delete({ where: { id: existingUser.id } });
+  }
+  console.log('✅ Limpeza concluída.\n');
+
   // ─── Usuário ──────────────────────────────────────────────────────────────────
   const password = await bcrypt.hash('Demo@2026', 10);
-  const user = await prisma.user.upsert({
-    where: { email: 'luiza@fazendauruguai.com.br' },
-    update: {},
-    create: {
-      name: 'Luiza Macedo',
-      email: 'luiza@fazendauruguai.com.br',
+  const user = await prisma.user.create({
+    data: {
+      name: 'Admin Demo',
+      email: 'demo@insemiai.com.br',
       password,
     },
   });
 
   // ─── Fazenda ──────────────────────────────────────────────────────────────────
-  const existingMembership = await prisma.farmMember.findFirst({ where: { userId: user.id } });
-  let farmId = existingMembership?.farmId;
-
-  if (!farmId) {
-    const farm = await prisma.farm.create({
-      data: {
-        name: 'Fazenda Uruguai',
-        city: 'Crateús',
-        state: 'CE',
-        averagePregnancyRate: 68,
-        ownerId: user.id,
-        aiProfile: 'standard',
-      },
-    });
-    await prisma.farmMember.create({
-      data: { farmId: farm.id, userId: user.id, role: 'admin' },
-    });
-    farmId = farm.id;
-  }
+  const farm = await prisma.farm.create({
+    data: {
+      name: 'Fazenda Uruguai',
+      city: 'Crateús',
+      state: 'CE',
+      averagePregnancyRate: 68,
+      ownerId: user.id,
+      aiProfile: 'standard',
+    },
+  });
+  await prisma.farmMember.create({
+    data: { farmId: farm.id, userId: user.id, role: 'admin' },
+  });
+  const farmId = farm.id;
 
   // ─── REPRODUTORES BOVINOS (3 machos — para ranking meaningful) ────────────────
-  const bumba = await prisma.animal.upsert({
-    where: { id: 'sire-bumba-0005' },
-    update: {},
-    create: {
+  const bumba = await prisma.animal.create({
+    data: {
       id: 'sire-bumba-0005',
       identifier: '0005', name: 'Bumbá', species: 'cattle', sex: 'male',
       breed: 'Nelore', lineage: 'Boi do Sertão', birthDate: new Date('2017-03-10'),
@@ -60,10 +70,8 @@ async function main() {
     },
   });
 
-  const barao = await prisma.animal.upsert({
-    where: { id: 'sire-barao-0006' },
-    update: {},
-    create: {
+  const barao = await prisma.animal.create({
+    data: {
       id: 'sire-barao-0006',
       identifier: '0006', name: 'Barão', species: 'cattle', sex: 'male',
       breed: 'Brahman', birthDate: new Date('2016-07-22'),
@@ -78,10 +86,8 @@ async function main() {
     },
   });
 
-  const trovao = await prisma.animal.upsert({
-    where: { id: 'sire-trovao-0009' },
-    update: {},
-    create: {
+  const trovao = await prisma.animal.create({
+    data: {
       id: 'sire-trovao-0009',
       identifier: '0009', name: 'Trovão', species: 'cattle', sex: 'male',
       breed: 'Nelore', lineage: 'Linhagem Lemgruber', birthDate: new Date('2019-05-18'),
@@ -97,10 +103,8 @@ async function main() {
   });
 
   // ─── REPRODUTORES OVINOS (2 machos) ──────────────────────────────────────────
-  const carneiro42 = await prisma.animal.upsert({
-    where: { id: 'sire-carneiro-0007' },
-    update: {},
-    create: {
+  const carneiro42 = await prisma.animal.create({
+    data: {
       id: 'sire-carneiro-0007',
       identifier: '0007', name: 'Carneiro 42', species: 'sheep', sex: 'male',
       breed: 'Dorper', birthDate: new Date('2019-01-15'),
@@ -115,10 +119,8 @@ async function main() {
     },
   });
 
-  const farao = await prisma.animal.upsert({
-    where: { id: 'sire-farao-0013' },
-    update: {},
-    create: {
+  const farao = await prisma.animal.create({
+    data: {
       id: 'sire-farao-0013',
       identifier: '0013', name: 'Faraó', species: 'sheep', sex: 'male',
       breed: 'Ile de France', birthDate: new Date('2020-08-10'),
@@ -134,10 +136,8 @@ async function main() {
   });
 
   // ─── REPRODUTORES CAPRINOS (2 machos) ────────────────────────────────────────
-  const kingBoer = await prisma.animal.upsert({
-    where: { id: 'sire-king-boer-0008' },
-    update: {},
-    create: {
+  const kingBoer = await prisma.animal.create({
+    data: {
       id: 'sire-king-boer-0008',
       identifier: '0008', name: 'King Boer', species: 'goat', sex: 'male',
       breed: 'Boer', birthDate: new Date('2018-06-10'),
@@ -152,10 +152,8 @@ async function main() {
     },
   });
 
-  const zeusBoer = await prisma.animal.upsert({
-    where: { id: 'sire-zeus-0014' },
-    update: {},
-    create: {
+  const zeusBoer = await prisma.animal.create({
+    data: {
       id: 'sire-zeus-0014',
       identifier: '0014', name: 'Zeus', species: 'goat', sex: 'male',
       breed: 'Boer', birthDate: new Date('2020-03-22'),
@@ -171,30 +169,24 @@ async function main() {
   });
 
   // ─── ANIMAIS DE GENEALOGIA ────────────────────────────────────────────────────
-  const moeda = await prisma.animal.upsert({
-    where: { id: 'dam-moeda-0010' },
-    update: {},
-    create: {
+  const moeda = await prisma.animal.create({
+    data: {
       id: 'dam-moeda-0010',
       identifier: '0010', name: 'Moeda', species: 'cattle', sex: 'female',
       breed: 'Nelore', birthDate: new Date('2018-05-15'),
       bodyConditionScore: 3, pregnancyHistory: 4, reproductiveStatus: 'Ready', farmId, updatedAt: new Date(),
     },
   });
-  const florita = await prisma.animal.upsert({
-    where: { id: 'dam-florita-0011' },
-    update: {},
-    create: {
+  const florita = await prisma.animal.create({
+    data: {
       id: 'dam-florita-0011',
       identifier: '0011', name: 'Florita', species: 'cattle', sex: 'female',
       breed: 'Nelore', birthDate: new Date('2019-11-20'),
       bodyConditionScore: 3, pregnancyHistory: 2, reproductiveStatus: 'Ready', farmId, updatedAt: new Date(),
     },
   });
-  const canela = await prisma.animal.upsert({
-    where: { id: 'dam-canela-0012' },
-    update: {},
-    create: {
+  const canela = await prisma.animal.create({
+    data: {
       id: 'dam-canela-0012',
       identifier: '0012', name: 'Canela', species: 'sheep', sex: 'female',
       breed: 'Santa Inês', birthDate: new Date('2019-04-10'),
@@ -205,10 +197,8 @@ async function main() {
   // ─── FÊMEAS BOVINAS ───────────────────────────────────────────────────────────
 
   // Mimosa — perfil ideal: ECC 4, 461 kg, 3 prenhezes, pós-parto 270 dias → CENÁRIO 1 (ao vivo)
-  const mimosa = await prisma.animal.upsert({
-    where: { id: 'animal-mimosa-0020' },
-    update: {},
-    create: {
+  const mimosa = await prisma.animal.create({
+    data: {
       id: 'animal-mimosa-0020',
       identifier: '0020', rfid: '12756', name: 'Mimosa',
       species: 'cattle', sex: 'female', breed: 'Nelore', lineage: 'Lemgruber',
@@ -231,10 +221,8 @@ async function main() {
   });
 
   // Garoa — inseminação pendente de diagnóstico (28 dias) → CENÁRIO 5: ciclo completo
-  const garoa = await prisma.animal.upsert({
-    where: { id: 'animal-garoa-0021' },
-    update: {},
-    create: {
+  const garoa = await prisma.animal.create({
+    data: {
       id: 'animal-garoa-0021',
       identifier: '0021', name: 'Garoa',
       species: 'cattle', sex: 'female', breed: 'Brahman',
@@ -255,10 +243,8 @@ async function main() {
   });
 
   // Arrepiada — prenhe (variedade de status)
-  const arrepiada = await prisma.animal.upsert({
-    where: { id: 'animal-arrepiada-0022' },
-    update: {},
-    create: {
+  const arrepiada = await prisma.animal.create({
+    data: {
       id: 'animal-arrepiada-0022',
       identifier: '0022', name: 'Arrepiada',
       species: 'cattle', sex: 'female', breed: 'Nelore',
@@ -277,10 +263,8 @@ async function main() {
   });
 
   // Estrela — risco moderado: 1 aborto + pós-parto curto (40 dias) → CENÁRIO 2 (pré-feito)
-  const estrela = await prisma.animal.upsert({
-    where: { id: 'animal-estrela-0023' },
-    update: {},
-    create: {
+  const estrela = await prisma.animal.create({
+    data: {
       id: 'animal-estrela-0023',
       identifier: '0023', name: 'Estrela',
       species: 'cattle', sex: 'female', breed: 'Girolando',
@@ -299,10 +283,8 @@ async function main() {
   });
 
   // Princesa — alto risco: ECC 2, aborto, pós-parto 45 dias (para best_dam mostrar contraste)
-  const princesa = await prisma.animal.upsert({
-    where: { id: 'animal-princesa-0024' },
-    update: {},
-    create: {
+  const princesa = await prisma.animal.create({
+    data: {
       id: 'animal-princesa-0024',
       identifier: '0024', name: 'Princesa',
       species: 'cattle', sex: 'female', breed: 'Angus',
@@ -321,10 +303,8 @@ async function main() {
   });
 
   // Bela — perfil intermediário: ECC 3, 1 prenhez, pós-parto 90 dias
-  const bela = await prisma.animal.upsert({
-    where: { id: 'animal-bela-0025' },
-    update: {},
-    create: {
+  const bela = await prisma.animal.create({
+    data: {
       id: 'animal-bela-0025',
       identifier: '0025', name: 'Bela',
       species: 'cattle', sex: 'female', breed: 'Sindi',
@@ -345,10 +325,8 @@ async function main() {
   // ─── FÊMEAS OVINAS ────────────────────────────────────────────────────────────
 
   // Branca — perfil ideal: ECC 4, 52 kg, 2 prenhezes → CENÁRIO 3 (ao vivo)
-  const branca = await prisma.animal.upsert({
-    where: { id: 'animal-branca-0030' },
-    update: {},
-    create: {
+  const branca = await prisma.animal.create({
+    data: {
       id: 'animal-branca-0030',
       identifier: '0030', name: 'Branca',
       species: 'sheep', sex: 'female', breed: 'Santa Inês',
@@ -371,10 +349,8 @@ async function main() {
   });
 
   // Serena — alto risco: ECC 2, pós-parto 35 dias, baixo peso (pré-feito)
-  const serena = await prisma.animal.upsert({
-    where: { id: 'animal-serena-0031' },
-    update: {},
-    create: {
+  const serena = await prisma.animal.create({
+    data: {
       id: 'animal-serena-0031',
       identifier: '0031', name: 'Serena',
       species: 'sheep', sex: 'female', breed: 'Morada Nova',
@@ -393,10 +369,8 @@ async function main() {
   });
 
   // Luna — nulípara jovem, ECC 4, bom peso → moderada
-  const luna = await prisma.animal.upsert({
-    where: { id: 'animal-luna-0032' },
-    update: {},
-    create: {
+  const luna = await prisma.animal.create({
+    data: {
       id: 'animal-luna-0032',
       identifier: '0032', name: 'Luna',
       species: 'sheep', sex: 'female', breed: 'Dorper',
@@ -415,10 +389,8 @@ async function main() {
   });
 
   // Antônia — risco moderado: ECC 3, 1 prenhez, 1 aborto, pós-parto 55 dias
-  const antonia = await prisma.animal.upsert({
-    where: { id: 'animal-antonia-0033' },
-    update: {},
-    create: {
+  const antonia = await prisma.animal.create({
+    data: {
       id: 'animal-antonia-0033',
       identifier: '0033', name: 'Antônia',
       species: 'sheep', sex: 'female', breed: 'Santa Inês',
@@ -439,10 +411,8 @@ async function main() {
   // ─── FÊMEAS CAPRINAS ──────────────────────────────────────────────────────────
 
   // Nuvem — perfil ideal: ECC 4, 40 kg, 2 partos, 80 dias pós-parto → CENÁRIO 4 (ao vivo)
-  const nuvem = await prisma.animal.upsert({
-    where: { id: 'animal-nuvem-0040' },
-    update: {},
-    create: {
+  const nuvem = await prisma.animal.create({
+    data: {
       id: 'animal-nuvem-0040',
       identifier: '0040', name: 'Nuvem',
       species: 'goat', sex: 'female', breed: 'Boer',
@@ -464,10 +434,8 @@ async function main() {
   });
 
   // Flor — moderado: ECC 3, 1 aborto, pós-parto 70 dias
-  const flor = await prisma.animal.upsert({
-    where: { id: 'animal-flor-0041' },
-    update: {},
-    create: {
+  const flor = await prisma.animal.create({
+    data: {
       id: 'animal-flor-0041',
       identifier: '0041', name: 'Flor',
       species: 'goat', sex: 'female', breed: 'Anglonubiana',
@@ -486,10 +454,8 @@ async function main() {
   });
 
   // Rosa — alto risco: ECC 2, doença reprodutiva, baixo peso (pré-feito)
-  const rosa = await prisma.animal.upsert({
-    where: { id: 'animal-rosa-0042' },
-    update: {},
-    create: {
+  const rosa = await prisma.animal.create({
+    data: {
       id: 'animal-rosa-0042',
       identifier: '0042', name: 'Rosa',
       species: 'goat', sex: 'female', breed: 'Canindé',
@@ -508,10 +474,8 @@ async function main() {
   });
 
   // Safira — intermediária: ECC 3, nulípara adulta, bom peso
-  const safira = await prisma.animal.upsert({
-    where: { id: 'animal-safira-0043' },
-    update: {},
-    create: {
+  const safira = await prisma.animal.create({
+    data: {
       id: 'animal-safira-0043',
       identifier: '0043', name: 'Safira',
       species: 'goat', sex: 'female', breed: 'Anglo-nubiana',
@@ -535,58 +499,13 @@ async function main() {
   await prisma.reproductiveEvent.createMany({
     skipDuplicates: true,
     data: [
-      // Mimosa: histórico rico (2 ciclos anteriores + parto recente)
-      {
-        animalId: mimosa.id, sireId: bumba.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Nelore MAX-102', lot: 'Lote 03 - Vacas Selecionadas',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(720), pregnancyDiagnosis: 'positive',
-        result: 'Prenha', confirmationDate: daysAgo(690),
-      },
-      { animalId: mimosa.id, eventType: 'birth', eventDate: daysAgo(540), pregnancyDiagnosis: 'positive', result: 'Parto normal, bezerra fêmea' },
-      {
-        animalId: mimosa.id, sireId: trovao.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Nelore LEM-01', lot: 'Lote 04 - Matrizes Selecionadas',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(450), pregnancyDiagnosis: 'positive',
-        result: 'Prenha', confirmationDate: daysAgo(420),
-      },
-      { animalId: mimosa.id, eventType: 'birth', eventDate: daysAgo(270), pregnancyDiagnosis: 'positive', result: 'Parto normal, bezerro macho saudável' },
-      // Garoa: inseminação pendente de diagnóstico (28 dias — ideal para demo)
-      {
-        animalId: garoa.id, sireId: barao.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Brahman REY-05', lot: 'Lote Matrizes Outono',
-        reproductiveProtocol: 'Ovsynch',
-        eventDate: daysAgo(28), pregnancyDiagnosis: 'pending',
-        notes: 'Aguardando diagnóstico — 30 dias ideais para confirmar',
-      },
-      // Arrepiada: prenhe confirmada
-      {
-        animalId: arrepiada.id, sireId: bumba.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Nelore MAX-102', lot: 'Lote Vacas Solteiras',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(120), pregnancyDiagnosis: 'positive',
-        result: 'Prenha', confirmationDate: daysAgo(90),
-      },
-      // Estrela: falha anterior + nova tentativa pendente
-      {
-        animalId: estrela.id, sireId: barao.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Brahman REY-05', lot: 'Lote Novilhas 2024',
-        reproductiveProtocol: 'IATF com eCG',
-        eventDate: daysAgo(55), pregnancyDiagnosis: 'conception_failure',
-        result: 'Vazia', confirmationDate: daysAgo(25),
-        notes: 'Falha de concepção — pós-parto muito curto no momento da IATF',
-      },
+      { id: 'evt-mimosa-iatf-1', animalId: mimosa.id, sireId: bumba.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Nelore MAX-102', lot: 'Lote 03 - Vacas Selecionadas', reproductiveProtocol: 'IATF', eventDate: daysAgo(720), pregnancyDiagnosis: 'positive', result: 'Prenha', confirmationDate: daysAgo(690) },
+      { id: 'evt-mimosa-parto-1', animalId: mimosa.id, eventType: 'birth', eventDate: daysAgo(540), pregnancyDiagnosis: 'positive', result: 'Parto normal, bezerra fêmea' },
+      { id: 'evt-mimosa-iatf-2', animalId: mimosa.id, sireId: trovao.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Nelore LEM-01', lot: 'Lote 04 - Matrizes Selecionadas', reproductiveProtocol: 'IATF', eventDate: daysAgo(450), pregnancyDiagnosis: 'positive', result: 'Prenha', confirmationDate: daysAgo(420) },
+      { id: 'evt-mimosa-parto-2', animalId: mimosa.id, eventType: 'birth', eventDate: daysAgo(270), pregnancyDiagnosis: 'positive', result: 'Parto normal, bezerro macho saudável' },
+      { id: 'evt-garoa-ovsynch-1', animalId: garoa.id, sireId: barao.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Brahman REY-05', lot: 'Lote Matrizes Outono', reproductiveProtocol: 'Ovsynch', eventDate: daysAgo(28), pregnancyDiagnosis: 'pending', notes: 'Aguardando diagnóstico — 30 dias ideais para confirmar' },
+      { id: 'evt-arrepiada-iatf-1', animalId: arrepiada.id, sireId: bumba.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Nelore MAX-102', lot: 'Lote Vacas Solteiras', reproductiveProtocol: 'IATF', eventDate: daysAgo(120), pregnancyDiagnosis: 'positive', result: 'Prenha', confirmationDate: daysAgo(90) },
+      { id: 'evt-estrela-iatf-1', animalId: estrela.id, sireId: barao.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Brahman REY-05', lot: 'Lote Novilhas 2024', reproductiveProtocol: 'IATF com eCG', eventDate: daysAgo(55), pregnancyDiagnosis: 'conception_failure', result: 'Vazia', confirmationDate: daysAgo(25), notes: 'Falha de concepção — pós-parto muito curto no momento da IATF' },
     ],
   });
 
@@ -594,48 +513,12 @@ async function main() {
   await prisma.reproductiveEvent.createMany({
     skipDuplicates: true,
     data: [
-      // Branca: 2 prenhezes confirmadas
-      {
-        animalId: branca.id, sireId: carneiro42.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Dorper DR-22', lot: 'Lote Ovelhas Ciclo 1',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(400), pregnancyDiagnosis: 'positive',
-        result: 'Prenha — parto gemelar', confirmationDate: daysAgo(370),
-      },
-      { animalId: branca.id, eventType: 'birth', eventDate: daysAgo(280), pregnancyDiagnosis: 'positive', result: 'Parto gemelar — 2 cordeiros saudáveis' },
-      {
-        animalId: branca.id, sireId: carneiro42.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Dorper DR-22', lot: 'Lote Ovelhas Ciclo 2',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(200), pregnancyDiagnosis: 'positive',
-        result: 'Prenha', confirmationDate: daysAgo(170),
-      },
-      { animalId: branca.id, eventType: 'birth', eventDate: daysAgo(95), pregnancyDiagnosis: 'positive', result: 'Parto normal, cordeira fêmea' },
-      // Serena: inseminação recente com diagnóstico pendente
-      {
-        animalId: serena.id, sireId: carneiro42.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Morada Nova MN-03', lot: 'Lote Ovelhas Ciclo 2',
-        reproductiveProtocol: 'Ovsynch',
-        eventDate: daysAgo(20), pregnancyDiagnosis: 'pending',
-        notes: 'ECC 2/5 — risco elevado. Monitorar peso pós-inseminação.',
-      },
-      // Antônia: falha anterior, nova tentativa pendente
-      {
-        animalId: antonia.id, sireId: farao.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Ile de France IF-15', lot: 'Lote Ovelhas Ciclo 1',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(200), pregnancyDiagnosis: 'conception_failure',
-        result: 'Vazia', confirmationDate: daysAgo(170),
-        notes: 'Aborto detectado por ultrassom 30 dias pós-inseminação',
-      },
+      { id: 'evt-branca-iatf-1', animalId: branca.id, sireId: carneiro42.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Dorper DR-22', lot: 'Lote Ovelhas Ciclo 1', reproductiveProtocol: 'IATF', eventDate: daysAgo(400), pregnancyDiagnosis: 'positive', result: 'Prenha — parto gemelar', confirmationDate: daysAgo(370) },
+      { id: 'evt-branca-parto-1', animalId: branca.id, eventType: 'birth', eventDate: daysAgo(280), pregnancyDiagnosis: 'positive', result: 'Parto gemelar — 2 cordeiros saudáveis' },
+      { id: 'evt-branca-iatf-2', animalId: branca.id, sireId: carneiro42.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Dorper DR-22', lot: 'Lote Ovelhas Ciclo 2', reproductiveProtocol: 'IATF', eventDate: daysAgo(200), pregnancyDiagnosis: 'positive', result: 'Prenha', confirmationDate: daysAgo(170) },
+      { id: 'evt-branca-parto-2', animalId: branca.id, eventType: 'birth', eventDate: daysAgo(95), pregnancyDiagnosis: 'positive', result: 'Parto normal, cordeira fêmea' },
+      { id: 'evt-serena-ovsynch-1', animalId: serena.id, sireId: carneiro42.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Morada Nova MN-03', lot: 'Lote Ovelhas Ciclo 2', reproductiveProtocol: 'Ovsynch', eventDate: daysAgo(20), pregnancyDiagnosis: 'pending', notes: 'ECC 2/5 — risco elevado. Monitorar peso pós-inseminação.' },
+      { id: 'evt-antonia-iatf-1', animalId: antonia.id, sireId: farao.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Ile de France IF-15', lot: 'Lote Ovelhas Ciclo 1', reproductiveProtocol: 'IATF', eventDate: daysAgo(200), pregnancyDiagnosis: 'conception_failure', result: 'Vazia', confirmationDate: daysAgo(170), notes: 'Aborto detectado por ultrassom 30 dias pós-inseminação' },
     ],
   });
 
@@ -643,57 +526,20 @@ async function main() {
   await prisma.reproductiveEvent.createMany({
     skipDuplicates: true,
     data: [
-      // Nuvem: 2 ciclos positivos completos
-      {
-        animalId: nuvem.id, sireId: kingBoer.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Boer KN-01', lot: 'Lote Caprinos Ciclo 1',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(430), pregnancyDiagnosis: 'positive',
-        result: 'Prenha', confirmationDate: daysAgo(400),
-      },
-      { animalId: nuvem.id, eventType: 'birth', eventDate: daysAgo(280), pregnancyDiagnosis: 'positive', result: 'Parto normal — cabrito macho 3,8 kg' },
-      {
-        animalId: nuvem.id, sireId: kingBoer.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Boer KN-02', lot: 'Lote Caprinos Ciclo 2',
-        reproductiveProtocol: 'IATF',
-        eventDate: daysAgo(200), pregnancyDiagnosis: 'positive',
-        result: 'Prenha', confirmationDate: daysAgo(170),
-      },
-      { animalId: nuvem.id, eventType: 'birth', eventDate: daysAgo(80), pregnancyDiagnosis: 'positive', result: 'Parto normal — 2 cabritas fêmeas' },
-      // Flor: falha anterior + nova tentativa pendente
-      {
-        animalId: flor.id, sireId: kingBoer.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Anglonubiana AG-05', lot: 'Lote Caprinos Ciclo 1',
-        reproductiveProtocol: 'IATF com eCG',
-        eventDate: daysAgo(140), pregnancyDiagnosis: 'conception_failure',
-        result: 'Vazia', confirmationDate: daysAgo(110),
-        notes: 'Reabsorção embrionária precoce detectada',
-      },
-      {
-        animalId: flor.id, sireId: zeusBoer.id,
-        eventType: 'artificial_insemination',
-        inseminator: 'Dr. Fernando Lima',
-        semenUsed: 'Boer ZB-01', lot: 'Lote Caprinos Ciclo 2',
-        reproductiveProtocol: 'Ressincronização',
-        eventDate: daysAgo(25), pregnancyDiagnosis: 'pending',
-        notes: 'Segunda tentativa — reprodutor alternado para minimizar homozigose',
-      },
+      { id: 'evt-nuvem-iatf-1', animalId: nuvem.id, sireId: kingBoer.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Boer KN-01', lot: 'Lote Caprinos Ciclo 1', reproductiveProtocol: 'IATF', eventDate: daysAgo(430), pregnancyDiagnosis: 'positive', result: 'Prenha', confirmationDate: daysAgo(400) },
+      { id: 'evt-nuvem-parto-1', animalId: nuvem.id, eventType: 'birth', eventDate: daysAgo(280), pregnancyDiagnosis: 'positive', result: 'Parto normal — cabrito macho 3,8 kg' },
+      { id: 'evt-nuvem-iatf-2', animalId: nuvem.id, sireId: kingBoer.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Boer KN-02', lot: 'Lote Caprinos Ciclo 2', reproductiveProtocol: 'IATF', eventDate: daysAgo(200), pregnancyDiagnosis: 'positive', result: 'Prenha', confirmationDate: daysAgo(170) },
+      { id: 'evt-nuvem-parto-2', animalId: nuvem.id, eventType: 'birth', eventDate: daysAgo(80), pregnancyDiagnosis: 'positive', result: 'Parto normal — 2 cabritas fêmeas' },
+      { id: 'evt-flor-iatf-1', animalId: flor.id, sireId: kingBoer.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Anglonubiana AG-05', lot: 'Lote Caprinos Ciclo 1', reproductiveProtocol: 'IATF com eCG', eventDate: daysAgo(140), pregnancyDiagnosis: 'conception_failure', result: 'Vazia', confirmationDate: daysAgo(110), notes: 'Reabsorção embrionária precoce detectada' },
+      { id: 'evt-flor-resync-1', animalId: flor.id, sireId: zeusBoer.id, eventType: 'artificial_insemination', inseminator: 'Dr. Fernando Lima', semenUsed: 'Boer ZB-01', lot: 'Lote Caprinos Ciclo 2', reproductiveProtocol: 'Ressincronização', eventDate: daysAgo(25), pregnancyDiagnosis: 'pending', notes: 'Segunda tentativa — reprodutor alternado para minimizar homozigose' },
     ],
   });
 
   // ─── PREDIÇÕES PRÉ-SALVAS (para exibir durante a demo sem esperar IA) ─────────
 
   // CENÁRIO 1 — Mimosa: análise Expert (mostrar profundidade do relatório)
-  await prisma.prediction.upsert({
-    where: { id: 'pred-mimosa-expert' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-mimosa-expert',
       animalId: mimosa.id, sireId: bumba.id,
       analysisType: 'pregnancy',
@@ -732,10 +578,8 @@ async function main() {
   });
 
   // CENÁRIO 2 — Estrela: análise Standard (risco moderado — para comparação)
-  await prisma.prediction.upsert({
-    where: { id: 'pred-estrela-standard' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-estrela-standard',
       animalId: estrela.id, sireId: trovao.id,
       analysisType: 'pregnancy',
@@ -768,10 +612,8 @@ async function main() {
   });
 
   // CENÁRIO 3 — Branca (ovino): análise Standard
-  await prisma.prediction.upsert({
-    where: { id: 'pred-branca-standard' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-branca-standard',
       animalId: branca.id, sireId: carneiro42.id,
       analysisType: 'pregnancy',
@@ -803,10 +645,8 @@ async function main() {
   });
 
   // CENÁRIO 3b — Serena (ovino): alto risco — para contraste
-  await prisma.prediction.upsert({
-    where: { id: 'pred-serena-standard' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-serena-standard',
       animalId: serena.id, sireId: carneiro42.id,
       analysisType: 'pregnancy',
@@ -841,10 +681,8 @@ async function main() {
   });
 
   // CENÁRIO 4 — Nuvem (caprino): análise Standard
-  await prisma.prediction.upsert({
-    where: { id: 'pred-nuvem-standard' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-nuvem-standard',
       animalId: nuvem.id, sireId: kingBoer.id,
       analysisType: 'pregnancy',
@@ -878,10 +716,8 @@ async function main() {
   });
 
   // CENÁRIO 4b — Rosa (caprino): alto risco
-  await prisma.prediction.upsert({
-    where: { id: 'pred-rosa-standard' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-rosa-standard',
       animalId: rosa.id, sireId: kingBoer.id,
       analysisType: 'pregnancy',
@@ -918,10 +754,8 @@ async function main() {
   });
 
   // CENÁRIO EXTRA — Melhor Reprodutor para Estrela (best_breeder pré-salvo)
-  await prisma.prediction.upsert({
-    where: { id: 'pred-estrela-breeder' },
-    update: {},
-    create: {
+  await prisma.prediction.create({
+    data: {
       id: 'pred-estrela-breeder',
       animalId: estrela.id, sireId: trovao.id,
       analysisType: 'best_breeder',
@@ -960,7 +794,7 @@ async function main() {
 
   console.log('✅ Seed concluído!\n');
   console.log('🔑 Credenciais demo:');
-  console.log('   Email : luiza@fazendauruguai.com.br');
+  console.log('   Email : demo@insemiai.com.br');
   console.log('   Senha : Demo@2026\n');
   console.log('🏡 Fazenda     : Fazenda Uruguai — Crateús/CE');
   console.log(`🐄 Animais     : ${totalAnimals}`);
