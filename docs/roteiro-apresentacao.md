@@ -52,10 +52,12 @@ Fazer análise ao vivo → **Nova Análise → Chance de Prenhez**:
 - Matriz: Mimosa · Reprodutor: Bumbá · IATF · 26°C · Seca
 
 **No resultado:**
-- Destacar a probabilidade (~84%) e o risco **baixo**
-- Ler um trecho do `aiInsight` em voz alta: a IA cita o peso exato, o ECC e a taxa real do Bumbá
+- Mencionar a probabilidade e o nível de risco — **o número exato vai variar a cada chamada**, e tudo bem
+- O foco é o `aiInsight`: ler um trecho em voz alta mostrando que a IA cita dados específicos
 
-> *"Olha o que a IA escreveu: ela está citando 461 kg, ECC 4/5, e que o Bumbá tem 86% de taxa real — 6 prenhezes em 7 inseminações registradas nesta fazenda. Não é uma resposta genérica — é uma análise específica desta vaca, deste reprodutor, desta fazenda."*
+> *"Olha o que a IA escreveu — ela está citando o peso exato da Mimosa, o ECC dela, e a taxa real do Bumbá com base nas inseminações registradas aqui nesta fazenda. Não é uma resposta que serviria para qualquer animal. É uma análise clínica deste animal específico."*
+
+> **Dica:** não cite o número em voz alta antes de aparecer na tela — deixe o resultado falar por si.
 
 ---
 
