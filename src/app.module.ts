@@ -24,7 +24,7 @@ import { BackofficeModule } from './backoffice/backoffice.module';
       validationSchema: envValidationSchema,
       validationOptions: { abortEarly: true },
     }),
-    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 20 }]),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 200 }]),
     PrismaModule,
     MailModule,
     AuthModule,

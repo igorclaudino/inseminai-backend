@@ -26,7 +26,7 @@ export class AiController {
   ) {}
 
   @Post('predict-pregnancy')
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @ApiOperation({
     summary: 'Predict pregnancy probability with AI analysis',
     description:
@@ -88,7 +88,7 @@ export class AiController {
   }
 
   @Get('recommend-breeder/:animalId')
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @ApiOperation({
     summary: 'Recommend Breeder — ranks breeders by compatibility with the female',
     description:
@@ -101,7 +101,7 @@ export class AiController {
   }
 
   @Get('best-dam')
-  @Throttle({ default: { ttl: 60_000, limit: 10 } })
+  @Throttle({ default: { ttl: 60_000, limit: 60 } })
   @ApiOperation({
     summary: 'Best Dam — ranks females in the herd ready for insemination',
     description:
