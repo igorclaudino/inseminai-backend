@@ -9,9 +9,11 @@ async function main() {
 
   // ─── Limpeza: apaga dados da fazenda demo para garantir estado inicial limpo ──
   console.log('🧹 Limpando dados anteriores da conta demo...');
-  const existingUser = await prisma.user.findUnique({ where: { email: 'demo@inseminai.com.br' } });
-  if (existingUser) {
-    const membership = await prisma.farmMember.findFirst({ where: { userId: existingUser.id } });
+  // Inclui o email antigo com typo (insemiai sem n) para limpar dados errados
+  for (const email of ['demo@insemiai.com.br', 'demo@inseminai.com.br']) {
+    const u = await prisma.user.findUnique({ where: { email } });
+    if (!u) continue;
+    const membership = await prisma.farmMember.findFirst({ where: { userId: u.id } });
     if (membership) {
       const fId = membership.farmId;
       await prisma.prediction.deleteMany({ where: { animal: { farmId: fId } } });
@@ -22,7 +24,7 @@ async function main() {
       await prisma.animal.deleteMany({ where: { farmId: fId } });
       await prisma.farm.delete({ where: { id: fId } });
     }
-    await prisma.user.delete({ where: { id: existingUser.id } });
+    await prisma.user.delete({ where: { id: u.id } });
   }
   console.log('✅ Limpeza concluída.\n');
 

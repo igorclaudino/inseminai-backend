@@ -75,6 +75,20 @@ Abrir o **Histórico de Análises** da fazenda (predições pré-salvas):
 
 ---
 
+### Demo 2.5 — Mobile: o técnico no campo (30s)
+
+> *"O produtor rural não está no escritório. Ele está no pasto, no curral, embaixo do sol. Por isso o InseminAI funciona direto no celular — sem instalar nada, só abrir o navegador."*
+
+**Pegar o celular** (ou projetar tela do celular via cabo/wireless) e abrir o sistema no browser mobile:
+- Mostrar a **predição da Nuvem (0040 — Caprino Boer)** já salva: **77%, risco baixo**
+- Rolar para mostrar o `aiInsight` com os dados específicos da Nuvem na tela do celular
+
+> *"Mesma análise, mesma IA, mesmo resultado — no celular do técnico no campo. Ele consulta antes de inseminar, sem precisar voltar ao escritório."*
+
+> **Dica de transição:** manter o celular na mão enquanto volta para o notebook para o próximo cenário.
+
+---
+
 ### Demo 3 — Ciclo Completo: Inseminação → Diagnóstico → Dashboard (90s)
 
 **Registrar nova inseminação** → Reprodução → Nova Inseminação:
