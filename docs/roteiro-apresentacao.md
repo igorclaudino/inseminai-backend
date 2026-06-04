@@ -33,7 +33,7 @@
 - Mostrar o **Dashboard**: 4 cards com totais, gráfico de evolução mensal, distribuição por espécie
 - Falar: *"Cada número aqui é atualizado automaticamente quando o técnico registra um evento — sem lançamento manual duplicado."*
 - Navegar para **Animais**: mostrar os 3 filtros de espécie (bovinos, ovinos, caprinos) e a genealogia com pai/mãe vinculados
-- Mostrar reprodutores machos com `fertilityScore` calculado automaticamente pelo histórico real de inseminações
+- Filtrar por **Sexo: Macho** para mostrar os reprodutores disponíveis — mencionar que o histórico de inseminações de cada um está acessível nos detalhes e no relatório de reprodutores
 
 ---
 
@@ -49,13 +49,13 @@ Abrir detalhes de **Mimosa (0020 — Nelore)**:
 - 461 kg, ECC 4/5, 3 prenhezes anteriores, sem abortos, genealogia Bumbá/Moeda
 
 Fazer análise ao vivo → **Nova Análise → Chance de Prenhez**:
-- Matriz: Mimosa · Reprodutor: Bumbá (score 88) · IATF · 26°C · Seca
+- Matriz: Mimosa · Reprodutor: Bumbá · IATF · 26°C · Seca
 
 **No resultado:**
 - Destacar a probabilidade (~84%) e o risco **baixo**
 - Ler um trecho do `aiInsight` em voz alta: a IA cita o peso exato, o ECC e a taxa real do Bumbá
 
-> *"Olha o que a IA escreveu: ela está citando 461 kg, ECC 4/5, e que o Bumbá tem 79% de taxa real em 24 inseminações. Não é uma resposta que serviria para qualquer animal — é uma análise específica desta vaca, desta fazenda."*
+> *"Olha o que a IA escreveu: ela está citando 461 kg, ECC 4/5, e que o Bumbá tem 86% de taxa real — 6 prenhezes em 7 inseminações registradas nesta fazenda. Não é uma resposta genérica — é uma análise específica desta vaca, deste reprodutor, desta fazenda."*
 
 ---
 
@@ -65,7 +65,7 @@ Abrir o **Histórico de Análises** da fazenda (predições pré-salvas):
 
 | Animal | Espécie | Resultado | Por que |
 |---|---|---|---|
-| **Estrela (0023)** | Bovino Girolando | **55% — risco moderado** | Pós-parto 40 dias + 1 aborto |
+| **Estrela (0023)** | Bovino Girolando | **52% — risco moderado** | Pós-parto 55 dias + falha recente por pós-parto curto |
 | **Serena (0031)** | Ovino Morada Nova | **44% — risco alto** | 37 kg (18% abaixo do mínimo) + ECC 2/5 |
 | **Rosa (0042)** | Caprino Canindé | **38% — risco alto** | Doença reprodutiva + peso 20% abaixo |
 
@@ -102,11 +102,11 @@ Garoa aparece na lista com diagnóstico **Pendente**.
 O sistema automaticamente:
 - Muda Garoa para **Prenha**
 - Cria evento de Prenhez no histórico
-- Incrementa o score do reprodutor Barão
+- Atualiza o histórico de inseminações do reprodutor Barão (visível no relatório de reprodutores)
 
 Abrir **Dashboard** → mostrar o card de Gravidezes Ativas atualizado.
 
-> *"Um clique. O sistema atualiza o animal, atualiza o reprodutor, atualiza o dashboard. O técnico registra uma vez — e todos os dados do rebanho se mantêm consistentes automaticamente."*
+> *"Um clique. O sistema atualiza o animal, atualiza o histórico do reprodutor, atualiza o dashboard. O técnico registra uma vez — e todos os dados do rebanho se mantêm consistentes automaticamente."*
 
 ---
 
@@ -125,7 +125,7 @@ Abrir **Dashboard** → mostrar o card de Gravidezes Ativas atualizado.
 
 > *"Uma fazenda com 200 fêmeas, fazendo 2 ciclos por ano no perfil Padrão, gasta menos de R$ 1,00 por ano com IA. O sistema se paga com menos de 3 inseminações evitadas por mês — independente do perfil escolhido."*
 
-> *"E o produtor que não tem budget ou não tem internet usa o perfil Essencial: cálculo local, resposta em menos de 200ms, zero custo de API. O sistema nunca depende da internet para funcionar."*
+> *"E o produtor que não tem budget usa o perfil Essencial: cálculo local, resposta em menos de 200ms, zero custo de API."*
 
 ---
 
@@ -151,9 +151,11 @@ Hoje usamos o **GPT-4o-mini da OpenAI** — o modelo mais custo-eficiente do mer
 
 ---
 
-### Diferencial 4 — Score de fertilidade automático e genealogia completa
+### Diferencial 4 — Inteligência que cresce com o uso
 
-> *"O score de fertilidade de cada reprodutor é calculado automaticamente: começa com uma estimativa por raça e vai sendo calibrado com os dados reais de cada inseminação registrada. Quanto mais o técnico usa o sistema, mais preciso o score fica."*
+> *"Cada inseminação registrada alimenta o histórico do reprodutor. O sistema acompanha quantas prenhezes ele confirmou, qual a taxa real de sucesso, e exibe isso no relatório de reprodutores e nas análises da IA. Quanto mais o técnico usa, mais precisa fica a recomendação."*
+
+> *"No relatório de reprodutores, o admin vê o ranking completo: quem está performando bem, quem está abaixo do esperado — com dados reais da própria fazenda, não médias genéricas de mercado."*
 
 > *"E o pedigree do rebanho é construído automaticamente: cada animal tem pai e mãe vinculados, e o sistema valida que não é possível criar ciclos na genealogia — um pai não pode ser filho do próprio filho."*
 
@@ -181,10 +183,10 @@ Hoje usamos o **GPT-4o-mini da OpenAI** — o modelo mais custo-eficiente do mer
 | Problema | Inseminação falha custa R$ 80–300 + 6 meses de ciclo perdido |
 | Solução | IA prevê a chance de prenhez com dados reais daquele animal específico |
 | Custo da IA | < R$ 0,002 por análise — se paga com 3 inseminações evitadas/mês |
-| Offline | Perfil Essencial funciona sem internet, resposta em < 200ms |
+| Perfil Essencial | Zero custo de API, resposta em < 200ms |
 | Multi-provedor | Arquitetura permite trocar OpenAI por Claude, Gemini ou modelo local |
 | Multi-espécie | Bovinos, ovinos e caprinos — única plataforma para os 3 |
-| Score automático | Fertilidade do reprodutor calibrada com dados reais de cada fazenda |
+| Histórico real | Taxa de sucesso do reprodutor calculada com dados reais da própria fazenda |
 
 ---
 
