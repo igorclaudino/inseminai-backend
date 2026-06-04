@@ -143,13 +143,7 @@ Hoje usamos o **GPT-4o-mini da OpenAI** — o modelo mais custo-eficiente do mer
 
 ---
 
-### Diferencial 3 — Funciona offline e no campo
-
-> *"O produtor rural do sertão não tem 4G o tempo todo. Com o perfil Essencial, o sistema roda localmente — sem chamar nenhuma API externa. O técnico no campo registra a inseminação, consulta a probabilidade, e o sistema funciona. Quando voltar à internet, sincroniza."*
-
----
-
-### Diferencial 4 — Multi-fazenda, multi-usuário, multi-espécie
+### Diferencial 3 — Multi-fazenda, multi-usuário, multi-espécie
 
 > *"Uma conta pode gerenciar múltiplas fazendas. Dentro de cada fazenda, o admin convida técnicos por e-mail — eles viram operadores, com acesso controlado. Cada fazenda tem seus dados isolados, seus próprios animais, seu próprio histórico."*
 
@@ -157,7 +151,7 @@ Hoje usamos o **GPT-4o-mini da OpenAI** — o modelo mais custo-eficiente do mer
 
 ---
 
-### Diferencial 5 — Score de fertilidade automático e genealogia completa
+### Diferencial 4 — Score de fertilidade automático e genealogia completa
 
 > *"O score de fertilidade de cada reprodutor é calculado automaticamente: começa com uma estimativa por raça e vai sendo calibrado com os dados reais de cada inseminação registrada. Quanto mais o técnico usa o sistema, mais preciso o score fica."*
 
