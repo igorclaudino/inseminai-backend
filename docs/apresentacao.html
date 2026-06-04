@@ -759,17 +759,24 @@
   function next() { show(current + 1); }
   function prev() { show(current - 1); }
 
+  // Teclado: setas, espaço, PgUp/PgDn
   document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') next();
-    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp') prev();
+    if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); next(); }
+    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
     if (e.key === 'f' || e.key === 'F') {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen();
     }
   });
 
-  // Click anywhere to advance (except nav buttons)
-  document.getElementById('deck').addEventListener('click', next);
+  // Clique no deck avança — mas ignora cliques nos botões de nav
+  document.getElementById('deck').addEventListener('click', e => {
+    if (e.target.closest('.nav')) return;
+    next();
+  });
+
+  // Impede que cliques nos botões propaguem para o deck
+  document.querySelector('.nav').addEventListener('click', e => e.stopPropagation());
 </script>
 </body>
 </html>
