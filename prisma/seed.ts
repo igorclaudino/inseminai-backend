@@ -9,7 +9,7 @@ async function main() {
 
   // ─── Limpeza: apaga dados da fazenda demo para garantir estado inicial limpo ──
   console.log('🧹 Limpando dados anteriores da conta demo...');
-  const existingUser = await prisma.user.findUnique({ where: { email: 'demo@insemiai.com.br' } });
+  const existingUser = await prisma.user.findUnique({ where: { email: 'demo@inseminai.com.br' } });
   if (existingUser) {
     const membership = await prisma.farmMember.findFirst({ where: { userId: existingUser.id } });
     if (membership) {
@@ -31,7 +31,7 @@ async function main() {
   const user = await prisma.user.create({
     data: {
       name: 'Admin Demo',
-      email: 'demo@insemiai.com.br',
+      email: 'demo@inseminai.com.br',
       password,
     },
   });
@@ -794,7 +794,7 @@ async function main() {
 
   console.log('✅ Seed concluído!\n');
   console.log('🔑 Credenciais demo:');
-  console.log('   Email : demo@insemiai.com.br');
+  console.log('   Email : demo@inseminai.com.br');
   console.log('   Senha : Demo@2026\n');
   console.log('🏡 Fazenda     : Fazenda Uruguai — Crateús/CE');
   console.log(`🐄 Animais     : ${totalAnimals}`);
