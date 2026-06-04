@@ -37,14 +37,15 @@
   .slide {
     position: absolute;
     inset: 0;
-    display: none;
-    animation: fadeIn 0.3s ease;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    display: flex;
   }
-  .slide.active { display: flex; }
-
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
   }
 
   /* ── Layouts ── */
@@ -370,18 +371,6 @@
     color: rgba(255,255,255,0.55);
     max-width: 440px;
     line-height: 1.6;
-  }
-
-  /* ── Botão invisível de avanço ── */
-  #click-next {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    z-index: 10;
   }
 
   /* ── Nav ── */
@@ -750,14 +739,11 @@
 
 </div>
 
-<!-- Botão invisível cobre o slide inteiro para avançar com clique -->
-<button id="click-next" onclick="next()" title="Clique para avançar"></button>
-
 <!-- Navigation -->
 <div class="nav">
-  <button onclick="prev(); event.stopPropagation();">&#8592;</button>
+  <button id="btn-prev">&#8592;</button>
   <span class="slide-counter" id="counter">1 / 11</span>
-  <button onclick="next(); event.stopPropagation();">&#8594;</button>
+  <button id="btn-next">&#8594;</button>
 </div>
 
 <script>
@@ -774,10 +760,22 @@
   function next() { show(current + 1); }
   function prev() { show(current - 1); }
 
+  // Clique em cada slide avança
+  slides.forEach(function(slide) {
+    slide.addEventListener('click', function(e) {
+      if (e.target.closest('#btn-prev') || e.target.closest('#btn-next')) return;
+      next();
+    });
+  });
+
+  // Botões de nav
+  document.getElementById('btn-prev').addEventListener('click', function(e) { e.stopPropagation(); prev(); });
+  document.getElementById('btn-next').addEventListener('click', function(e) { e.stopPropagation(); next(); });
+
   // Teclado
-  document.addEventListener('keydown', e => {
-    if (['ArrowRight', 'ArrowDown', ' ', 'PageDown'].includes(e.key)) { e.preventDefault(); next(); }
-    if (['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp'   || e.key === 'PageUp')                    { e.preventDefault(); prev(); }
     if (e.key === 'f' || e.key === 'F') {
       if (!document.fullscreenElement) document.documentElement.requestFullscreen();
       else document.exitFullscreen();
