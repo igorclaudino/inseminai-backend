@@ -4,6 +4,16 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 const daysAgo = (n: number) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
+function animalPhoto(emoji: string, name: string, breed: string, bg = '#1B4332'): string {
+  const svg = `<svg width="400" height="300" xmlns="http://www.w3.org/2000/svg">
+    <rect width="400" height="300" fill="${bg}"/>
+    <text x="200" y="125" font-family="Arial,sans-serif" font-size="80" text-anchor="middle">${emoji}</text>
+    <text x="200" y="195" font-family="Arial,sans-serif" font-size="26" font-weight="bold" fill="white" text-anchor="middle">${name}</text>
+    <text x="200" y="228" font-family="Arial,sans-serif" font-size="16" fill="rgba(255,255,255,0.7)" text-anchor="middle">${breed}</text>
+  </svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`;
+}
+
 async function main() {
   console.log('🌱 Iniciando seed de dados para demo...\n');
 
@@ -173,6 +183,7 @@ async function main() {
     pregnancyHistory: 3, birthCount: 3, abortionCount: 0,
     lastBirthDate: daysAgo(270), reproductiveStatus: 'Ready',
     producer: 'Fazenda Uruguai', birthWeight: 34.5, weaningWeight: 190.0, preWeaningWeightGain: 0.95,
+    photoUrl: animalPhoto('🐄', 'Mimosa', 'Nelore'),
     farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 380, weighingDate: daysAgo(540) },
@@ -192,7 +203,9 @@ async function main() {
     bodyConditionScore: 3, reproductiveDiseaseHistory: false,
     pregnancyHistory: 1, birthCount: 1, abortionCount: 0,
     lastBirthDate: daysAgo(120), reproductiveStatus: 'Ready',
-    producer: 'Fazenda Uruguai', farmId, updatedAt: new Date(),
+    producer: 'Fazenda Uruguai',
+    photoUrl: animalPhoto('🐄', 'Garoa', 'Brahman', '#2D6A4F'),
+    farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 335, weighingDate: daysAgo(360) },
       { weightKg: 358, weighingDate: daysAgo(180) },
@@ -228,7 +241,9 @@ async function main() {
     bodyConditionScore: 3, reproductiveDiseaseHistory: false,
     pregnancyHistory: 1, birthCount: 1, abortionCount: 0,
     lastBirthDate: daysAgo(55), reproductiveStatus: 'Ready',
-    producer: 'Fazenda Uruguai', farmId, updatedAt: new Date(),
+    producer: 'Fazenda Uruguai',
+    photoUrl: animalPhoto('🐄', 'Estrela', 'Girolando', '#40916C'),
+    farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 362, weighingDate: daysAgo(200) },
       { weightKg: 370, weighingDate: daysAgo(55), notes: 'Pós-parto' },
@@ -283,6 +298,7 @@ async function main() {
     pregnancyHistory: 2, birthCount: 2, abortionCount: 0,
     lastBirthDate: daysAgo(95), reproductiveStatus: 'Ready',
     producer: 'Fazenda Uruguai', birthWeight: 4.2, weaningWeight: 22.0, preWeaningWeightGain: 0.24,
+    photoUrl: animalPhoto('🐑', 'Branca', 'Santa Inês', '#52796F'),
     farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 42, weighingDate: daysAgo(360) },
@@ -303,7 +319,9 @@ async function main() {
     bodyConditionScore: 2, reproductiveDiseaseHistory: false,
     pregnancyHistory: 2, birthCount: 2, abortionCount: 0,
     lastBirthDate: daysAgo(35), reproductiveStatus: 'Ready',
-    producer: 'Fazenda Uruguai', farmId, updatedAt: new Date(),
+    producer: 'Fazenda Uruguai',
+    photoUrl: animalPhoto('🐑', 'Serena', 'Morada Nova', '#6B705C'),
+    farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 44, weighingDate: daysAgo(200) },
       { weightKg: 41, weighingDate: daysAgo(80), notes: 'Perda de peso pós-parto' },
@@ -357,6 +375,7 @@ async function main() {
     pregnancyHistory: 2, birthCount: 2, abortionCount: 0,
     lastBirthDate: daysAgo(80), reproductiveStatus: 'Ready',
     producer: 'Fazenda Uruguai', birthWeight: 3.8, weaningWeight: 18.0, preWeaningWeightGain: 0.19,
+    photoUrl: animalPhoto('🐐', 'Nuvem', 'Boer', '#344E41'),
     farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 32, weighingDate: daysAgo(360) },
@@ -392,6 +411,7 @@ async function main() {
     bodyConditionScore: 2, reproductiveDiseaseHistory: true,
     pregnancyHistory: 0, birthCount: 0, abortionCount: 0,
     reproductiveStatus: 'Ready', producer: 'Fazenda Uruguai',
+    photoUrl: animalPhoto('🐐', 'Rosa', 'Canindé', '#7F4F24'),
     farmId, updatedAt: new Date(),
     weighings: { create: [
       { weightKg: 32, weighingDate: daysAgo(180), notes: 'Peso abaixo do ideal' },
