@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InseminAI — Apresentação</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1B4332;
+    --green-light: #2D6A4F;
+    --cream: #EDE8DC;
+    --cream-dark: #D8D0C0;
+    --white: #FFFFFF;
+    --text-dark: #1a1a1a;
+    --text-muted: #6b7280;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .deck {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+  }
+
+  .slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    display: flex;
+  }
+  .slide.active {
+    opacity: 1;
+    pointer-events: auto;
+    cursor: pointer;
+  }
+
+  /* ── Layouts ── */
+  .layout-split {
+    display: grid;
+    grid-template-columns: 38% 62%;
+    height: 100%;
+  }
+  .layout-full {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: var(--green);
+  }
+  .layout-cream {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    background: var(--cream);
+  }
+
+  /* ── Panels ── */
+  .panel-green {
+    background: var(--green);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 52px 48px;
+    color: var(--white);
+  }
+  .panel-cream {
+    background: var(--cream);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 64px 72px;
+    position: relative;
+  }
+
+  /* ── Logo ── */
+  .logo {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: var(--white);
+    line-height: 1;
+  }
+  .logo span { font-weight: 300; }
+  .logo-line {
+    width: 48px;
+    height: 2px;
+    background: rgba(255,255,255,0.4);
+    margin: 18px 0 20px;
+  }
+  .logo-sub {
+    font-size: 1rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.75);
+    line-height: 1.55;
+    max-width: 240px;
+  }
+
+  /* Logo grande na capa */
+  .logo-big {
+    font-size: 4.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    color: var(--white);
+  }
+  .logo-big span { font-weight: 300; }
+  .logo-big-line {
+    width: 72px;
+    height: 2px;
+    background: rgba(255,255,255,0.35);
+    margin: 28px 0 24px;
+  }
+  .logo-big-sub {
+    font-size: 1.25rem;
+    font-weight: 400;
+    color: rgba(255,255,255,0.7);
+    line-height: 1.6;
+    max-width: 440px;
+  }
+  .logo-big-tag {
+    margin-top: 48px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── Section label ── */
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 10px;
+  }
+  .section-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.25;
+    margin-bottom: 10px;
+  }
+  .section-desc {
+    font-size: 0.88rem;
+    color: rgba(255,255,255,0.6);
+    line-height: 1.6;
+    max-width: 220px;
+    margin-top: 12px;
+  }
+
+  /* ── Content typography ── */
+  .content-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--green);
+    line-height: 1.2;
+    margin-bottom: 10px;
+  }
+  .content-line {
+    width: 48px;
+    height: 2px;
+    background: var(--cream-dark);
+    margin-bottom: 36px;
+  }
+
+  /* ── Data items (problema) ── */
+  .data-item {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 28px;
+  }
+  .data-item:last-child { margin-bottom: 0; }
+  .data-label {
+    font-size: 1rem;
+    color: var(--text-dark);
+    line-height: 1.4;
+    font-weight: 400;
+  }
+  .data-value {
+    font-weight: 700;
+    color: var(--green);
+  }
+  .data-footnote {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    margin-top: 32px;
+    line-height: 1.6;
+    border-top: 1px solid var(--cream-dark);
+    padding-top: 16px;
+    position: absolute;
+    bottom: 40px;
+    left: 72px;
+    right: 72px;
+  }
+
+  /* ── Solution bullets ── */
+  .bullets { display: flex; flex-direction: column; gap: 22px; }
+  .bullet {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .bullet-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+    margin-top: 7px;
+  }
+  .bullet-text {
+    font-size: 1.05rem;
+    color: var(--text-dark);
+    line-height: 1.5;
+  }
+  .bullet-text strong { color: var(--green); }
+
+  /* ── Demo slide ── */
+  .demo-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--white);
+    gap: 24px;
+  }
+  .demo-tag {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.4);
+  }
+  .demo-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    letter-spacing: -1px;
+    line-height: 1.1;
+  }
+  .demo-sub {
+    font-size: 1.1rem;
+    color: rgba(255,255,255,0.6);
+    max-width: 480px;
+  }
+
+  /* ── Profiles table ── */
+  .profiles { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+  .profile-row {
+    display: grid;
+    grid-template-columns: 32px 90px 1fr 80px 90px;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .profile-icon { font-size: 1.1rem; }
+  .profile-name { font-size: 0.88rem; font-weight: 700; color: var(--green); }
+  .profile-desc { font-size: 0.78rem; color: var(--text-muted); }
+  .profile-cost { font-size: 0.8rem; font-weight: 600; color: var(--green); text-align: right; }
+  .profile-1k { font-size: 0.75rem; font-weight: 500; color: var(--text-muted); text-align: right; }
+
+  /* ── Provider arch ── */
+  .arch-block {
+    background: rgba(255,255,255,0.6);
+    border-radius: 10px;
+    padding: 20px 24px;
+    margin-bottom: 14px;
+  }
+  .arch-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+  }
+  .arch-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--green);
+  }
+  .arch-sub { font-size: 0.82rem; color: var(--text-muted); margin-top: 4px; }
+
+  /* ── Three species ── */
+  .species-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 8px;
+  }
+  .species-card {
+    background: rgba(255,255,255,0.6);
+    border-radius: 10px;
+    padding: 22px 16px;
+    text-align: center;
+  }
+  .species-icon { font-size: 2rem; margin-bottom: 8px; }
+  .species-name { font-size: 0.95rem; font-weight: 700; color: var(--green); }
+  .species-breeds { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
+
+  /* ── Next steps ── */
+  .steps { display: flex; flex-direction: column; gap: 18px; }
+  .step {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    background: rgba(255,255,255,0.6);
+    border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .step-num {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: var(--cream-dark);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 32px;
+  }
+  .step-content {}
+  .step-title { font-size: 0.95rem; font-weight: 700; color: var(--green); }
+  .step-desc { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+  /* ── ROI highlight ── */
+  .roi-box {
+    background: var(--green);
+    border-radius: 12px;
+    padding: 24px 28px;
+    color: var(--white);
+    margin-top: 8px;
+  }
+  .roi-number { font-size: 2.2rem; font-weight: 800; line-height: 1; }
+  .roi-desc { font-size: 0.88rem; color: rgba(255,255,255,0.7); margin-top: 6px; line-height: 1.5; }
+
+  /* ── Closing slide ── */
+  .closing-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--white);
+    gap: 20px;
+  }
+  .closing-tagline {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1.3;
+    max-width: 640px;
+    letter-spacing: -0.5px;
+  }
+  .closing-tagline em { font-style: normal; color: rgba(255,255,255,0.5); }
+  .closing-sub {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.55);
+    max-width: 440px;
+    line-height: 1.6;
+  }
+
+  /* ── Nav ── */
+  .nav {
+    position: fixed;
+    bottom: 28px;
+    right: 36px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    z-index: 20;
+  }
+  .nav button {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.7);
+    font-size: 1rem;
+    cursor: pointer;
+    backdrop-filter: blur(4px);
+    transition: background 0.2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,0.25); }
+  .slide-counter {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.35);
+    min-width: 40px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="deck" id="deck">
+
+  <!-- ── 01 CAPA ── -->
+  <div class="slide active layout-full">
+    <div class="closing-center">
+      <div class="logo-big"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-big-line"></div>
+      <div class="logo-big-sub">Sistema de Monitoramento de<br>Inseminação Artificial Pecuarista</div>
+      <div class="logo-big-tag">Hackathon ExpoAgro Crateús 2026</div>
+    </div>
+  </div>
+
+  <!-- ── 02 PROBLEMA ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">01 / Contexto</div>
+      <div class="section-title">O problema que ninguém resolveu</div>
+      <div class="section-desc">Cada inseminação falha custa tempo, dinheiro e um ciclo reprodutivo inteiro.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">O custo de inseminar<br>sem dados</div>
+      <div class="content-line"></div>
+      <div class="data-item">
+        <span class="data-label">Taxa média de prenhez por IA no Brasil: <span class="data-value">50–60%</span> <sup>1</sup></span>
+      </div>
+      <div class="data-item">
+        <span class="data-label">Custo médio por inseminação: <span class="data-value">R$ 80 a R$ 300</span> <sup>2</sup></span>
+      </div>
+      <div class="data-item">
+        <span class="data-label">Cada inseminação falha = <span class="data-value">1 ciclo reprodutivo perdido</span><br>até 6 meses no sertão <sup>3</sup></span>
+      </div>
+      <div class="data-footnote">
+        Fontes: ¹ ASBIA — Associação Brasileira de Inseminação Artificial. Relatório Estatístico de Mercado de Sêmen. São Paulo: ASBIA, 2022. / Baruselli, P.S. et al. Animal Reproduction Science, v. 82–83, 2004. &nbsp;² Embrapa Pecuária Sudeste. Custo de Produção na Bovinocultura de Corte. São Carlos: Embrapa, 2021. / ASBIA, 2022. &nbsp;³ Hafez, E.S.E.; Hafez, B. Reprodução Animal. 7ª ed. São Paulo: Manole, 2004.
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 03 SOLUÇÃO ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">02 / A Solução</div>
+      <div class="section-title">Dados do rebanho em decisões inteligentes</div>
+      <div class="section-desc">Predição de prenhez com IA antes de cada inseminação.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">O que é o InseminAI</div>
+      <div class="content-line"></div>
+      <div class="bullets">
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Cadastro do rebanho com <strong>genealogia, pesagens e histórico reprodutivo</strong> completo</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Registro de cada inseminação: protocolo, reprodutor, inseminador, diagnóstico — <strong>atualização automática dos contadores</strong></div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Antes de inseminar: <strong>IA calcula a chance de prenhez</strong> com base em 11 fatores enviados ao modelo — peso, ECC, pós-parto, histórico reprodutivo, abortos, doenças, status, reprodutor, protocolo, temperatura e estação</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Funciona para <strong>bovinos, ovinos e caprinos</strong> na mesma plataforma</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 04 DEMO ── -->
+  <div class="slide layout-full">
+    <div class="demo-center">
+      <div class="demo-tag">Demonstração</div>
+      <div class="demo-title">Demonstração<br>ao vivo</div>
+      <div class="demo-sub">Fazenda Uruguai · Crateús/CE<br>demo@inseminai.com.br</div>
+    </div>
+  </div>
+
+  <!-- ── 05 DEMO: ANÁLISE IA ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">Demo / Análise IA</div>
+      <div class="section-title">A IA fala sobre este animal</div>
+      <div class="section-desc">Não uma resposta genérica — dados específicos desta vaca, desta fazenda.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">O que importa não é<br>o número</div>
+      <div class="content-line"></div>
+      <div class="bullets">
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>O raciocínio da IA</strong> — ela cita peso, ECC (Escore de Condição Corporal) e pós-parto daquele animal, não orientações genéricas</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>Taxa real do reprodutor</strong> — baseada nas inseminações registradas nesta fazenda, não em médias de mercado</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>Alertas específicos</strong> — "pós-parto de 55 dias, involução pode estar incompleta" vs "monitorar o animal"</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>Recomendação de manejo</strong> — específica para a raça e a estação no semiárido</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 06 DIFERENCIAL 1: PERFIS DE IA ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">Diferencial 01</div>
+      <div class="section-title">Perfis de IA que viabilizam o negócio</div>
+      <div class="section-desc">O custo da IA é irrelevante frente ao custo de uma inseminação falha.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">4 perfis, 1 fazenda</div>
+      <div class="content-line"></div>
+      <div style="display:grid;grid-template-columns:32px 80px 1fr 80px 90px;gap:8px 12px;margin-bottom:10px;padding:0 16px;">
+        <span></span><span></span><span></span>
+        <span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;text-align:right;">Por análise</span>
+        <span style="font-size:0.65rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;text-align:right;">1.000 análises</span>
+      </div>
+      <div class="profiles">
+        <div class="profile-row">
+          <div class="profile-icon">⚡</div>
+          <div class="profile-name">Essencial</div>
+          <div class="profile-desc">Cálculo local, sem chamada externa, &lt; 200ms</div>
+          <div class="profile-cost">R$ 0,00</div>
+          <div class="profile-1k">R$ 0,00</div>
+        </div>
+        <div class="profile-row">
+          <div class="profile-icon">💬</div>
+          <div class="profile-name">Rápido</div>
+          <div class="profile-desc">IA gera predição + insight em 1 frase</div>
+          <div class="profile-cost">~R$ 0,001</div>
+          <div class="profile-1k">~R$ 1,04</div>
+        </div>
+        <div class="profile-row">
+          <div class="profile-icon">📋</div>
+          <div class="profile-name">Padrão</div>
+          <div class="profile-desc">IA gera predição + análise em 2–3 frases</div>
+          <div class="profile-cost">~R$ 0,001</div>
+          <div class="profile-1k">~R$ 1,38</div>
+        </div>
+        <div class="profile-row">
+          <div class="profile-icon">🔬</div>
+          <div class="profile-name">Expert</div>
+          <div class="profile-desc">IA gera relatório técnico completo</div>
+          <div class="profile-cost">~R$ 0,002</div>
+          <div class="profile-1k">~R$ 2,17</div>
+        </div>
+      </div>
+      <div style="margin-top:16px; font-size:0.8rem; color:var(--text-muted); line-height:1.5;">
+        200 fêmeas · 2 ciclos/ano · perfil Padrão = <strong style="color:var(--green)">menos de R$ 1,00/ano com IA</strong><br>
+        O sistema se paga com <strong style="color:var(--green)">menos de 3 inseminações evitadas por mês</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 07 DIFERENCIAL 2: ARQUITETURA ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">Diferencial 02</div>
+      <div class="section-title">Arquitetura aberta para qualquer modelo de IA</div>
+      <div class="section-desc">Sem dependência de fornecedor. Sem reescrita se o mercado mudar.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">Não estamos presos<br>ao OpenAI</div>
+      <div class="content-line"></div>
+      <div class="arch-block">
+        <div class="arch-label">Hoje</div>
+        <div class="arch-value">GPT-4o-mini — modelo de linguagem da OpenAI</div>
+        <div class="arch-sub">Modelo mais custo-eficiente do mercado para este caso de uso</div>
+      </div>
+      <div class="arch-block">
+        <div class="arch-label">Amanhã — mudança mínima de código</div>
+        <div class="arch-value">Claude (Anthropic) · Gemini (Google) · LLaMA (local)</div>
+        <div class="arch-sub">O módulo <code style="background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:3px;font-size:0.8em;">AiInsightsService</code> centraliza todas as chamadas — um único ponto de troca</div>
+      </div>
+      <div class="arch-block">
+        <div class="arch-label">Proteção do negócio</div>
+        <div class="arch-value">Se o preço subir ou um modelo melhor surgir para zootecnia</div>
+        <div class="arch-sub">Migramos sem impacto para o cliente — o campo <code style="background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:3px;font-size:0.8em;">aiProfile</code> na fazenda já prevê essa extensão</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 08 DIFERENCIAL 3: MULTI ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">Diferencial 03</div>
+      <div class="section-title">Multi-fazenda · Multi-usuário · Multi-espécie</div>
+      <div class="section-desc">Uma plataforma para toda a pecuária do sertão cearense.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">3 espécies, 1 sistema</div>
+      <div class="content-line"></div>
+      <div class="species-grid">
+        <div class="species-card">
+          <div class="species-icon">🐄</div>
+          <div class="species-name">Bovinos</div>
+          <div class="species-breeds">Nelore · Brahman · Girolando · Angus · Sindi</div>
+        </div>
+        <div class="species-card">
+          <div class="species-icon">🐑</div>
+          <div class="species-name">Ovinos</div>
+          <div class="species-breeds">Santa Inês · Morada Nova · Dorper · Ile de France</div>
+        </div>
+        <div class="species-card">
+          <div class="species-icon">🐐</div>
+          <div class="species-name">Caprinos</div>
+          <div class="species-breeds">Boer · Anglonubiana · Canindé</div>
+        </div>
+      </div>
+      <div style="margin-top:28px;" class="bullets">
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Admin convida técnicos por e-mail — papéis <strong>admin</strong> ou <strong>operador</strong></div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Cada fazenda tem dados <strong>isolados e independentes</strong> — multi-tenant seguro</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 09 DIFERENCIAL 4: HISTÓRICO ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">Diferencial 04</div>
+      <div class="section-title">Inteligência que cresce com o uso</div>
+      <div class="section-desc">Cada evento registrado torna o sistema mais preciso para aquela fazenda.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">O sistema aprende<br>com a fazenda</div>
+      <div class="content-line"></div>
+      <div class="bullets">
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Taxa de sucesso do reprodutor calculada com <strong>dados reais desta fazenda</strong> — não médias de mercado</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Relatório de reprodutores mostra <strong>quem performa bem e quem está abaixo</strong> do esperado</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Pedigree construído automaticamente — sistema <strong>rejeita ciclos de genealogia</strong> inválidos</div>
+        </div>
+        <div class="bullet">
+          <div class="bullet-dot"></div>
+          <div class="bullet-text">Dashboard atualiza em tempo real a cada evento — <strong>zero lançamento duplicado</strong></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 10 O QUE CONSTRUÍMOS ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">10 dias → MVP (Produto Mínimo Viável)</div>
+      <div class="section-title">O que construímos</div>
+      <div class="section-desc">IA real · Multi-espécie · Multi-fazenda · Pronto para produção.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">Entregamos um sistema<br>funcional completo</div>
+      <div class="content-line"></div>
+      <div class="bullets">
+        <div class="bullet"><div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>IA real</strong> com GPT-4o-mini — predição de prenhez, recomendação de reprodutor e ranking de matrizes</div>
+        </div>
+        <div class="bullet"><div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>3 espécies</strong> — bovinos, ovinos e caprinos com análise adaptada para o semiárido</div>
+        </div>
+        <div class="bullet"><div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>Multi-fazenda e multi-usuário</strong> — convites por e-mail, papéis admin/operador, dados isolados por fazenda</div>
+        </div>
+        <div class="bullet"><div class="bullet-dot"></div>
+          <div class="bullet-text"><strong>Deploy em produção</strong> — backend no Render, banco de dados Neon PostgreSQL, frontend no Vercel</div>
+        </div>
+      </div>
+      <div style="margin-top:24px;">
+        <div class="roi-box">
+          <div class="roi-number">&lt; R$ 0,002</div>
+          <div class="roi-desc">por análise de prenhez com IA<br>Se paga com 3 inseminações evitadas por mês</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 11 PRÓXIMOS PASSOS ── -->
+  <div class="slide layout-split">
+    <div class="panel-green">
+      <div class="logo"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-line"></div>
+      <div class="section-label">Escalabilidade</div>
+      <div class="section-title">Para escalar</div>
+      <div class="section-desc">O que seria necessário para levar o InseminAI a todo o sertão cearense.</div>
+    </div>
+    <div class="panel-cream">
+      <div class="content-title">Próximos passos</div>
+      <div class="content-line"></div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-content">
+            <div class="step-title">App mobile nativo</div>
+            <div class="step-desc">Interface simplificada para uso no pasto, sem dependência de browser</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-content">
+            <div class="step-title">Integração com balanças digitais</div>
+            <div class="step-desc">Pesagem automática via Bluetooth ou RFID (identificação por radiofrequência no brinco eletrônico)</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-content">
+            <div class="step-title">Modelo fine-tuned para o semiárido</div>
+            <div class="step-desc">IA treinada com dados reais das raças atendidas pela plataforma</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-content">
+            <div class="step-title">Relatórios para financiamento rural</div>
+            <div class="step-desc">Exportar histórico reprodutivo no formato exigido por bancos e cooperativas</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 11 ENCERRAMENTO ── -->
+  <div class="slide layout-full">
+    <div class="closing-center">
+      <div class="logo-big"><strong>Insemin</strong><span>AI</span></div>
+      <div class="logo-big-line"></div>
+      <div class="closing-tagline">
+        Mais dados.<br>Melhores decisões.<br><em>Mais prenhezes bem-sucedidas.</em>
+      </div>
+      <div class="closing-sub">
+        O sertão cearense tem um dos maiores rebanhos do Nordeste.<br>
+        O InseminAI é a ferramenta que faltava.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav">
+  <button id="btn-prev">&#8592;</button>
+  <span class="slide-counter" id="counter">1 / 12</span>
+  <button id="btn-next">&#8594;</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  let current = 0;
+
+  function show(n) {
+    slides[current].classList.remove('active');
+    current = (n + slides.length) % slides.length;
+    slides[current].classList.add('active');
+    document.getElementById('counter').textContent = (current + 1) + ' / ' + slides.length;
+  }
+
+  function next() { show(current + 1); }
+  function prev() { show(current - 1); }
+
+  // Clique em cada slide avança
+  slides.forEach(function(slide) {
+    slide.addEventListener('click', function(e) {
+      if (e.target.closest('#btn-prev') || e.target.closest('#btn-next')) return;
+      next();
+    });
+  });
+
+  // Botões de nav
+  document.getElementById('btn-prev').addEventListener('click', function(e) { e.stopPropagation(); prev(); });
+  document.getElementById('btn-next').addEventListener('click', function(e) { e.stopPropagation(); next(); });
+
+  // Teclado
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp'   || e.key === 'PageUp')                    { e.preventDefault(); prev(); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    }
+  });
+</script>
+</body>
+</html>
