@@ -1,4 +1,4 @@
-# InsemiAI — Backend
+# InseminAI — Backend
 
 Sistema de gestão genética e reprodutiva para bovinos, ovinos e caprinos com predição de prenhez por Inteligência Artificial.
 
@@ -41,8 +41,8 @@ npm install
 Crie um arquivo `.env` na raiz do projeto:
 
 ```env
-DATABASE_URL="postgresql://postgres:root@localhost:5432/insemiai"
-JWT_SECRET="insemiai-jwt-secret-hackathon-2026"
+DATABASE_URL="postgresql://postgres:root@localhost:5432/inseminai"
+JWT_SECRET="inseminai-jwt-secret-hackathon-2026"
 JWT_EXPIRES_IN="7d"
 OPENAI_API_KEY="sk-..."          # opcional
 PORT=3001
@@ -52,9 +52,9 @@ FRONTEND_URL="http://localhost:3000"
 MAIL_HOST="smtp.exemplo.com"
 MAIL_PORT="587"
 MAIL_SECURE="false"
-MAIL_USER="noreply@insemiai.com"
+MAIL_USER="noreply@inseminai.com.br"
 MAIL_PASS="senha"
-MAIL_FROM="InseminAI <noreply@insemiai.com>"
+MAIL_FROM="InseminAI <noreply@inseminai.com.br>"
 ```
 
 ### Banco de dados
@@ -84,6 +84,51 @@ npm run build && npm run start:prod
 
 Servidor: `http://localhost:3001`  
 Swagger: `http://localhost:3001/docs`
+
+---
+
+## Docker
+
+### Subir com Docker Compose (recomendado)
+
+Sobe o backend + PostgreSQL com um único comando:
+
+```bash
+docker compose up --build
+```
+
+A `OPENAI_API_KEY` pode ser passada via variável de ambiente ou arquivo `.env` na raiz:
+
+```env
+OPENAI_API_KEY=sk-...
+```
+
+O Compose executa `prisma migrate deploy` automaticamente antes de iniciar o servidor. Para popular o banco com dados de demonstração após subir:
+
+```bash
+docker compose exec backend npx ts-node prisma/seed.ts
+```
+
+### Apenas a imagem (sem Compose)
+
+```bash
+# Build
+docker build -t inseminai-backend .
+
+# Run (apontando para um PostgreSQL externo)
+docker run -p 3001:3001 \
+  -e DATABASE_URL="postgresql://..." \
+  -e JWT_SECRET="..." \
+  -e OPENAI_API_KEY="sk-..." \
+  inseminai-backend
+```
+
+### Portas expostas
+
+| Serviço | Porta |
+|---|---|
+| Backend (API + Swagger) | `3001` |
+| PostgreSQL | `5432` |
 
 ---
 
@@ -341,7 +386,7 @@ O algoritmo foi calibrado com referências zootécnicas para o semiárido nordes
 
 ## Conformidade com a LGPD
 
-O InsemiAI trata dados pessoais de produtores rurais (nome, e-mail) e dados de animais de propriedade privada. As medidas adotadas:
+O InseminAI trata dados pessoais de produtores rurais (nome, e-mail) e dados de animais de propriedade privada. As medidas adotadas:
 
 | Princípio LGPD | Implementação |
 |---|---|

@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: inseminai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d inseminai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/inseminai?sslmode=disable"
+      DIRECT_URL: "postgresql://postgres:postgres@db:5432/inseminai?sslmode=disable"
+      JWT_SECRET: "inseminai-jwt-secret-hackathon-2026"
+      JWT_EXPIRES_IN: "7d"
+      BACKOFFICE_SECRET: "inseminai-backoffice-secret"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      PORT: "3001"
+      FRONTEND_URL: "${FRONTEND_URL:-http://localhost:3000}"
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/main"
+
+volumes:
+  postgres_data:
