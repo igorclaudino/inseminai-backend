@@ -1,6 +1,0 @@
-- Decidimos que o código deve ser em ingles. Os retornos devem ser em portugues para o frontend
-- Quando eu crio uma conta, eu sou admin de uma fazenda. Eu, como admin, terei uma tela de membros onde eu posso convidar pessoas para colaborar na minha fazenda. Eu vou escolher se esse convidado vai ser um admin da minha fazenda ou operador. ao convidar alguem, eu preencho o email e qual perfil ele tera na fazenda. Ele receberá um email para aceitar o convite. Se ele nao tiver conta, deve criar uma conta. Se já tiver, basta aceitar e logar com a conta que ele ja ira poder lidar com os registros
-- eu só consigo gerenciar registros das fazendas que sou membro/admin. 
-- admin pode fazer tudo. operadador pode fazer tudo menos convidar membro ou excluir registros
-- as exclusoes de todo o sistema serão logicas
-- ao excluir um animal, preciso informar o motivo da exclusao

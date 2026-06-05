@@ -359,7 +359,5 @@ O InsemiAI trata dados pessoais de produtores rurais (nome, e-mail) e dados de a
 
 - [`docs/metodologia-predicao.md`](docs/metodologia-predicao.md) — metodologia completa com referências bibliográficas
 - [`docs/relatorio-viabilidade-ia.md`](docs/relatorio-viabilidade-ia.md) — viabilidade econômica do módulo de IA
-- [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md) — roteiro completo da apresentação do hackathon
-- [`docs/demo-roteiro.md`](docs/demo-roteiro.md) — roteiro da demonstração ao vivo com cenários e dados
-- [`docs/apresentacao.html`](docs/apresentacao.html) — slides da apresentação (também disponível em `/api/health/slides`)
 - Swagger interativo: `/docs` (disponível na URL de produção)
+- Slides da apresentação: `/api/health/slides`
