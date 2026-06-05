@@ -70,6 +70,8 @@ npx prisma migrate deploy
 npx ts-node prisma/seed.ts
 ```
 
+> O seed é **idempotente**: apaga todos os dados da conta `demo@inseminai.com.br` e recria do zero. Pode ser executado quantas vezes for necessário (ex.: antes de um ensaio e antes da apresentação).
+
 ### Iniciar o servidor
 
 ```bash
@@ -266,6 +268,13 @@ Parentesco (`sireId`, `damId`) tem validação de ciclos (BFS) — nenhum animal
 | GET | `/animal/:animalId` | Desempenho reprodutivo do animal |
 | GET | `/breeders` | Ranking de reprodutores por fertilidade |
 
+### Health — `/api/health`
+
+| Método | Rota | Descrição |
+|---|---|---|
+| GET | `/` | Health check (status do banco de dados) |
+| GET | `/slides` | Apresentação HTML do InseminAI (sem autenticação) |
+
 ---
 
 ## Perfis de IA
@@ -349,4 +358,8 @@ O InsemiAI trata dados pessoais de produtores rurais (nome, e-mail) e dados de a
 ## Documentação adicional
 
 - [`docs/metodologia-predicao.md`](docs/metodologia-predicao.md) — metodologia completa com referências bibliográficas
+- [`docs/relatorio-viabilidade-ia.md`](docs/relatorio-viabilidade-ia.md) — viabilidade econômica do módulo de IA
+- [`docs/roteiro-apresentacao.md`](docs/roteiro-apresentacao.md) — roteiro completo da apresentação do hackathon
+- [`docs/demo-roteiro.md`](docs/demo-roteiro.md) — roteiro da demonstração ao vivo com cenários e dados
+- [`docs/apresentacao.html`](docs/apresentacao.html) — slides da apresentação (também disponível em `/api/health/slides`)
 - Swagger interativo: `/docs` (disponível na URL de produção)
